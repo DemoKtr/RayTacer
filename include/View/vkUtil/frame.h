@@ -20,6 +20,7 @@ namespace vkUtil {
 		VkCommandBuffer mainCommandBuffer;
 		VkCommandBuffer computeCommandBuffer;
 		void destroy();
+		void make_descriptors_resources();
 	};
 
 }

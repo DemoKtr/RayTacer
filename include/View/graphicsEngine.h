@@ -65,7 +65,7 @@ class GraphicsEngine {
 	void finalize_setup();
 	void make_assets();
 	void create_frame_command_buffer();
-	void create_frame_resources(int number_of_models);
+	void create_frame_resources();
 	void create_descriptor_set_layouts();
 	
 

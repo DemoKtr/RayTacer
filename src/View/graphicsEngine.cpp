@@ -8,6 +8,10 @@
 #include <View/vkUtil/Pipelines/pipelineCache.h>
 #include <View/vkUtil/Pipelines/computePipelineBuilder.h>
 #include <View/vkInit/descriptors.h>
+#include <View/vkInit/synchronizer.h>
+#include <View/vkInit/commands.h>
+
+
 
 
 
@@ -43,7 +47,8 @@ void GraphicsEngine::render() {
 
 
 		uint32_t imageIndex;
-		uint32_t imageIndex;VkResult result = vkAcquireNextImageKHR(
+	
+		VkResult result = vkAcquireNextImageKHR(
 			device,
 			swapchain,
 			UINT64_MAX,
@@ -102,7 +107,7 @@ void GraphicsEngine::render() {
 
 
 		
-			VkResult result = vkQueueSubmit(graphicsQueue, 1, &submitInfo, swapchainFrames[frameNumber].inFlight);
+		result = vkQueueSubmit(graphicsQueue, 1, &submitInfo, swapchainFrames[frameNumber].inFlight);
 		
 		if(result != VK_SUCCESS){
 			std::cout << "Synchronization failed" << std::endl;
@@ -118,7 +123,7 @@ void GraphicsEngine::render() {
 
 		presentInfo.pImageIndices = &imageIndex;
 
-		VkResult present;
+		
 
 		VkResult present = vkQueuePresentKHR(presentQueue, &presentInfo);
 
@@ -134,6 +139,10 @@ void GraphicsEngine::render() {
 }
 
 GraphicsEngine::~GraphicsEngine() {
+
+	vkDestroyCommandPool(device, CommandPool, nullptr);
+	vkDestroyCommandPool(device, computeCommandPool, nullptr);
+	vkDestroyCommandPool(device, transferCommandPool, nullptr);
 
 	cleanup_swapchain();
 
@@ -196,13 +205,26 @@ void GraphicsEngine::create_swapchain() {
 	for (vkUtil::SwapChainFrame& frame : swapchainFrames) {
 		frame.logicalDevice = device;
 		frame.physicalDevice = physicalDevice;
-		frame.width = swapchainExtent.width;
-		frame.height = swapchainExtent.height;
-		frame.make_depth_resources();
+
 
 	}
 	frameNumber = 0;
 	std::cout << maxFramesInFlight << std::endl;
+}
+
+void GraphicsEngine::recreate_swapchain() {
+	this->width = 0;
+	this->height = 0;
+	while (this->width == 0 || this->height == 0) {
+		glfwGetFramebufferSize(mainWindow, &this->width, &this->height);
+		glfwWaitEvents();
+	}
+
+	
+	vkDeviceWaitIdle(device);
+
+	cleanup_swapchain();
+	create_swapchain();
 }
 
 void GraphicsEngine::cleanup_swapchain() {
@@ -258,7 +280,8 @@ void GraphicsEngine::create_pipeline() {
 }
 
 void GraphicsEngine::finalize_setup() {
-
+	create_frame_resources();
+	create_frame_command_buffer();
 }
 
 void GraphicsEngine::make_assets() {
@@ -267,42 +290,44 @@ void GraphicsEngine::make_assets() {
 
 
 void GraphicsEngine::create_frame_command_buffer() {
-	/*
-	CommandPool = vkInit::make_command_pool(physicalDevice, device, surface, debugMode);
-	computeCommandPool = vkInit::make_compute_command_pool(physicalDevice, device, surface, debugMode);
-	transferCommandPool = vkInit::make_transfer_command_pool(physicalDevice, device, surface, debugMode);
-	vkInit::commandBufferInputChunk commandBufferInput = { device,CommandPool, swapchainFrames };
-	maincommandBuffer = vkInit::make_command_buffer(commandBufferInput, debugMode);
+	
+	vkInit::make_command_pool(physicalDevice, device,CommandPool ,surface, debugMode);
+	vkInit::make_compute_command_pool(physicalDevice, device, computeCommandPool,surface, debugMode);
+	vkInit::make_transfer_command_pool(physicalDevice, device, transferCommandPool,surface, debugMode);
+	vkInit::commandBufferInputChunk commandBufferInput = { device,CommandPool, swapchainFrames, maincommandBuffer };
+	vkInit::make_command_buffer(commandBufferInput, debugMode);
 	vkInit::make_imgui_frame_command_buffers(commandBufferInput, debugMode);
 
 	commandBufferInput.commandPool = computeCommandPool;
-	computeCommandBuffer = vkInit::make_command_buffer(commandBufferInput, debugMode);
+	commandBufferInput.commandBuffer = computeCommandBuffer;
+	vkInit::make_command_buffer(commandBufferInput, debugMode);
 	commandBufferInput.commandPool = transferCommandPool;
-	transferCommandBuffer = vkInit::make_command_buffer(commandBufferInput, debugMode);
-	*/
+	commandBufferInput.commandBuffer = transferCommandBuffer;
+	vkInit::make_command_buffer(commandBufferInput, debugMode);
+	
 }
 
-void GraphicsEngine::create_frame_resources(int number_of_models) {
+void GraphicsEngine::create_frame_resources() {
 	/*
 	vkInit::descriptorSetLayoutData bindings;
 	bindings.count = 2;
 	bindings.types.push_back(vk::DescriptorType::eUniformBuffer);
 	bindings.types.push_back(vk::DescriptorType::eStorageBuffer);
 	DescriptorPool = vkInit::make_descriptor_pool(device, static_cast<uint32_t>(swapchainFrames.size()), bindings);
-	
+	*/
 
 	for (vkUtil::SwapChainFrame& frame : swapchainFrames) //referencja 
 	{
-		frame.imageAvailable = vkInit::make_semaphore(device, debugMode);
-		frame.renderFinished = vkInit::make_semaphore(device, debugMode);
-		frame.computeFinished = vkInit::make_semaphore(device, debugMode);
-		frame.inFlight = vkInit::make_fence(device, debugMode);
-		frame.make_descriptors_resources(number_of_models);
-		frame.DescriptorSet = vkInit::allocate_descriptor_set(device, DescriptorPool, DescriptorSetLayout);
+		vkInit::make_semaphore(device, frame.imageAvailable,debugMode);
+		vkInit::make_semaphore(device, frame.renderFinished,debugMode);
+		vkInit::make_semaphore(device, frame.computeFinished,debugMode);
+		vkInit::make_fence(device, frame.inFlight,debugMode);
+		frame.make_descriptors_resources();
+		//frame.DescriptorSet = vkInit::allocate_descriptor_set(device, DescriptorPool, DescriptorSetLayout);
 
 
 	}
-	*/
+	
 }
 
 void GraphicsEngine::create_descriptor_set_layouts() {
@@ -321,4 +346,12 @@ void GraphicsEngine::create_descriptor_set_layouts() {
 
 	postprocessDescriptorSetLayout = vkInit::make_descriptor_set_layout(device, bindings);
 	*/
+}
+
+void GraphicsEngine::record_draw_command()
+{
+}
+
+void GraphicsEngine::prepare_frame()
+{
 }

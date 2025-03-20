@@ -7,7 +7,7 @@ void vkInit::make_command_pool(VkPhysicalDevice physicalDevice, VkDevice device,
 	VkCommandPoolCreateInfo poolInfo = {};
 	poolInfo.flags = VkCommandPoolCreateFlags() | VkCommandPoolCreateFlagBits::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 	poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
-
+	poolInfo.sType = VkStructureType::VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     VkResult result = vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool);
 
     if (result != VK_SUCCESS) {
@@ -21,6 +21,7 @@ void vkInit::make_compute_command_pool(VkPhysicalDevice physicalDevice, VkDevice
 	VkCommandPoolCreateInfo poolInfo = {};
 	poolInfo.flags = VkCommandPoolCreateFlags() | VkCommandPoolCreateFlagBits::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 	poolInfo.queueFamilyIndex = queueFamilyIndices.computeFamily.value();
+	poolInfo.sType = VkStructureType::VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 
 	VkResult result = vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool);
 	if (result != VK_SUCCESS) {
@@ -35,7 +36,7 @@ void vkInit::make_transfer_command_pool(VkPhysicalDevice physicalDevice, VkDevic
 	VkCommandPoolCreateInfo poolInfo = {};
 	poolInfo.flags = VkCommandPoolCreateFlags() | VkCommandPoolCreateFlagBits::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 	poolInfo.queueFamilyIndex = queueFamilyIndices.transferFamily.value();
-
+	poolInfo.sType = VkStructureType::VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 	VkResult result = vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool);
 	if (result != VK_SUCCESS) {
 		if (debugMode)
@@ -50,6 +51,7 @@ void vkInit::make_command_buffer(commandBufferInputChunk inputChunk, bool debugM
 	allocInfo.commandPool = inputChunk.commandPool;
 	allocInfo.level = VkCommandBufferLevel::VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	allocInfo.commandBufferCount = 1;
+	allocInfo.sType = VkStructureType::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	VkResult result = vkAllocateCommandBuffers(inputChunk.device, &allocInfo, &inputChunk.commandBuffer);
 	if (result != VK_SUCCESS) {
 		std::cout << "FAILED!!! Allocated main command buffer for frame, error code: " << result << std::endl;
