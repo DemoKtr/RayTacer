@@ -76,60 +76,80 @@ void GraphicsEngine::render() {
 
 		
 
-		prepare_frame();
+		prepare_frame(frameNumber);
 
 		VkCommandBuffer MainCommandBuffer = swapchainFrames[frameNumber].mainCommandBuffer;
-		//VkCommandBuffer unlitCommandBuffer = swapchainFrames[frameNumber].unlitCommandBuffer;
+		VkCommandBuffer computeCommandBuffer = swapchainFrames[frameNumber].computeCommandBuffer;
 
 	
 		vkResetCommandBuffer(MainCommandBuffer, VkCommandBufferResetFlagBits::VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+		vkResetCommandBuffer(computeCommandBuffer, VkCommandBufferResetFlagBits::VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
 
 
 
 
-		record_draw_command();
+		record_draw_command(MainCommandBuffer,imageIndex);
+		record_compute_command(computeCommandBuffer,imageIndex);
 
+
+
+
+		VkPipelineStageFlags computeWaitStage = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+		VkSubmitInfo computeSubmitInfo = { };
+		computeSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		computeSubmitInfo.commandBufferCount = 1;
+		computeSubmitInfo.pCommandBuffers = &computeCommandBuffer;
+
+		// Compute czeka na obraz, który zosta³ zg³oszony przez vkAcquireNextImageKHR:
+		computeSubmitInfo.waitSemaphoreCount = 1;
+		computeSubmitInfo.pWaitSemaphores = &swapchainFrames[frameNumber].imageAvailable;
+		computeSubmitInfo.pWaitDstStageMask = &computeWaitStage;
+
+		// Po wykonaniu compute, sygnalizujemy, ¿e obliczenia siê skoñczy³y:
+		computeSubmitInfo.signalSemaphoreCount = 1;
+		computeSubmitInfo.pSignalSemaphores = &swapchainFrames[frameNumber].computeFinished;
+
+		 result = vkQueueSubmit(computeQueue, 1, &computeSubmitInfo, VK_NULL_HANDLE);
+		if (result != VK_SUCCESS) {
+			if (debugMode) {
+				std::cout << "Failed to submit compute command buffer! Error code: " << result << std::endl;
+			}
+		}
 
 
 		//taskmanager.waitForPriorityTasks(TaskPriority::DESCRIPTORS);
-		VkSubmitInfo submitInfo = {};
+		VkPipelineStageFlags graphicsWaitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		VkSubmitInfo graphicsSubmitInfo = { };
+		graphicsSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		graphicsSubmitInfo.waitSemaphoreCount = 1;
+		// Graphics czeka na zakoñczenie compute:
+		graphicsSubmitInfo.pWaitSemaphores = &swapchainFrames[frameNumber].computeFinished;
+		graphicsSubmitInfo.pWaitDstStageMask = &graphicsWaitStage;
+		graphicsSubmitInfo.commandBufferCount = 1;
+		graphicsSubmitInfo.pCommandBuffers = &MainCommandBuffer;
 
-		VkSemaphore waitSemaphores[] = { swapchainFrames[frameNumber].imageAvailable };
-		VkPipelineStageFlags waitStages[] = { VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-		submitInfo.waitSemaphoreCount = 1;
-		submitInfo.pWaitSemaphores = waitSemaphores;
-		submitInfo.pWaitDstStageMask = waitStages;
+		// Po wykonaniu renderingu sygnalizujemy, ¿e render finished:
+		graphicsSubmitInfo.signalSemaphoreCount = 1;
+		graphicsSubmitInfo.pSignalSemaphores = &swapchainFrames[frameNumber].renderFinished;
 
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &MainCommandBuffer;
-
-		VkSemaphore signalSemaphores[] = { swapchainFrames[frameNumber].renderFinished };
-		submitInfo.signalSemaphoreCount = 1;
-		submitInfo.pSignalSemaphores = signalSemaphores;
-
-
-		
-		result = vkQueueSubmit(graphicsQueue, 1, &submitInfo, swapchainFrames[frameNumber].inFlight);
-		
-		if(result != VK_SUCCESS){
+		result = vkQueueSubmit(graphicsQueue, 1, &graphicsSubmitInfo, swapchainFrames[frameNumber].inFlight);
+		if (result != VK_SUCCESS) {
 			std::cout << "Synchronization failed" << std::endl;
 		}
 
-		VkPresentInfoKHR presentInfo = {};
-		presentInfo.waitSemaphoreCount = 1;
-		presentInfo.pWaitSemaphores = signalSemaphores;
 
+		VkPresentInfoKHR presentInfo = { };
+		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+		presentInfo.waitSemaphoreCount = 1;
+		presentInfo.pWaitSemaphores = &swapchainFrames[frameNumber].renderFinished;
 		VkSwapchainKHR swapChains[] = { swapchain };
 		presentInfo.swapchainCount = 1;
 		presentInfo.pSwapchains = swapChains;
-
 		presentInfo.pImageIndices = &imageIndex;
+		presentInfo.pNext = nullptr;
 
-		
-
-		VkResult present = vkQueuePresentKHR(presentQueue, &presentInfo);
-
-		if (present == VK_ERROR_OUT_OF_DATE_KHR || present == VK_SUBOPTIMAL_KHR) {
+		result = vkQueuePresentKHR(presentQueue, &presentInfo);
+		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
 			std::cout << "Recreate" << std::endl;
 			recreate_swapchain();
 			return;
@@ -259,7 +279,7 @@ void GraphicsEngine::create_pipeline() {
 	//pipelineBuilder.reset();
 	
 	vkInit::ComputePipelineBuilder computePipelineBuilder(device);
-	//computePipelineBuilder.add_descriptor_set_layout();
+	computePipelineBuilder.add_descriptor_set_layout(rayCastDescriptorSetLayout);
 	//computePipelineBuilder.set_push_constant();
 	computePipelineBuilder.specify_compute_shader("resources/shaders/compute.spv");
 	output = computePipelineBuilder.build(true);
@@ -302,13 +322,15 @@ void GraphicsEngine::create_frame_command_buffer() {
 }
 
 void GraphicsEngine::create_frame_resources() {
-	/*
+	
 	vkInit::descriptorSetLayoutData bindings;
-	bindings.count = 2;
-	bindings.types.push_back(vk::DescriptorType::eUniformBuffer);
-	bindings.types.push_back(vk::DescriptorType::eStorageBuffer);
-	DescriptorPool = vkInit::make_descriptor_pool(device, static_cast<uint32_t>(swapchainFrames.size()), bindings);
-	*/
+	bindings.count = 1;
+	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+
+	vkInit::make_descriptor_pool(device, finalImageDescriptorPool,static_cast<uint32_t>(swapchainFrames.size()), bindings);
+
+	bindings.types[0] = VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+	vkInit::make_descriptor_pool(device, rayCastDescriptorPool, static_cast<uint32_t>(swapchainFrames.size()), bindings);
 
 	for (vkUtil::SwapChainFrame& frame : swapchainFrames) //referencja 
 	{
@@ -317,7 +339,9 @@ void GraphicsEngine::create_frame_resources() {
 		vkInit::make_semaphore(device, frame.computeFinished,debugMode);
 		vkInit::make_fence(device, frame.inFlight,debugMode);
 		frame.make_descriptors_resources();
-		//frame.DescriptorSet = vkInit::allocate_descriptor_set(device, DescriptorPool, DescriptorSetLayout);
+		vkInit::allocate_descriptor_set(device, frame.postProcessDescriptorSet,finalImageDescriptorPool, finalImageDescriptorSetLayout);
+		vkInit::allocate_descriptor_set(device, frame.RayCastDescriptorSet,rayCastDescriptorPool, rayCastDescriptorSetLayout);
+		
 
 
 	}
@@ -336,13 +360,204 @@ void GraphicsEngine::create_descriptor_set_layouts() {
 
 
 	vkInit::make_descriptor_set_layout(device, bindings, finalImageDescriptorSetLayout);
+	bindings.types[0] = VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+	bindings.stages[0] = (VkShaderStageFlagBits::VK_SHADER_STAGE_COMPUTE_BIT);
+	vkInit::make_descriptor_set_layout(device, bindings, rayCastDescriptorSetLayout);
 	
 }
 
-void GraphicsEngine::record_draw_command()
-{
+void GraphicsEngine::record_draw_command(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
+
+	VkCommandBufferBeginInfo beginInfo = {};
+	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	beginInfo.flags = 0; // lub VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, jeœli dotyczy
+	beginInfo.pInheritanceInfo = NULL;
+
+	vkBeginCommandBuffer(commandBuffer, &beginInfo);
+	VkImageMemoryBarrier barrier = {  };
+	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	barrier.oldLayout = VK_IMAGE_LAYOUT_GENERAL; // aktualny layout
+	barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL; // oczekiwany layout
+	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.image = swapchainFrames[imageIndex].postProcessImage;
+	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	barrier.subresourceRange.baseMipLevel = 0;
+	barrier.subresourceRange.levelCount = 1;
+	barrier.subresourceRange.baseArrayLayer = 0;
+	barrier.subresourceRange.layerCount = 1;
+	// Ustal odpowiednio maski dostêpu (np. jeœli obraz by³ zapisywany, ustaw srcAccessMask na VK_ACCESS_MEMORY_WRITE_BIT)
+	barrier.srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT;
+	barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+	vkCmdPipelineBarrier(
+		commandBuffer,
+		VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, // lub odpowiedni etap, np. VK_PIPELINE_STAGE_TRANSFER_BIT
+		VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, // lub etap, w którym obraz ma byæ u¿yty
+		0,
+		0, NULL,
+		0, NULL,
+		1, &barrier
+	);
+
+	// Ustal kolor czyszczenia jako czarny (0, 0, 0, 1)
+	VkClearColorValue clearColor = { { 0.0f, 0.0f, 0.0f, 1.0f } };
+	vkUtil::PipelineCacheChunk pipelineInfo = vkResources::scenePipelines->getPipeline("Finall Image");
+	VkRenderingAttachmentInfoKHR colorAttachment = {};
+	colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
+	colorAttachment.pNext = nullptr;
+	colorAttachment.imageView = swapchainFrames[imageIndex].mainImageView; // Upewnij siê, ¿e imageView zosta³ poprawnie utworzony
+	colorAttachment.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	colorAttachment.clearValue.color = clearColor;
+
+	VkRenderingInfoKHR renderingInfo = {};
+	renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO_KHR;
+	renderingInfo.pNext = nullptr;
+	renderingInfo.renderArea.offset = { 0, 0 };
+	renderingInfo.renderArea.extent = swapchainExtent; 
+	renderingInfo.layerCount = 1;
+	renderingInfo.colorAttachmentCount = 1;
+	renderingInfo.pColorAttachments = &colorAttachment;
+	renderingInfo.pDepthAttachment = nullptr;
+	PFN_vkCmdBeginRenderingKHR vkCmdBeginRenderingKHR =
+		(PFN_vkCmdBeginRenderingKHR)vkGetDeviceProcAddr(device, "vkCmdBeginRenderingKHR");
+	PFN_vkCmdEndRenderingKHR vkCmdEndRenderingKHR =
+		(PFN_vkCmdEndRenderingKHR)vkGetDeviceProcAddr(device, "vkCmdEndRenderingKHR");
+	
+	vkCmdBeginRenderingKHR(commandBuffer, &renderingInfo);
+
+	
+	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineInfo.pipeline);
+
+	
+	vkCmdBindDescriptorSets(
+		commandBuffer,
+		VK_PIPELINE_BIND_POINT_GRAPHICS,
+		pipelineInfo.pipelineLayout,
+		0,                  // firstSet
+		1,                  // descriptorSetCount
+		&swapchainFrames[imageIndex].postProcessDescriptorSet,              // wskaŸnik do descriptor setu
+		0,                  // dynamicOffsetCount
+		nullptr             // pDynamicOffsets
+	);
+
+	// Rysowanie: 6 wierzcho³ków, 1 instancja, start indeksu 0, start vertex 0
+	vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+
+	// Zakoñczenie renderowania dynamicznego
+	vkCmdEndRenderingKHR(commandBuffer);
+
+
+
+	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	barrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.image = swapchainFrames[imageIndex].mainImage;
+	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	barrier.subresourceRange.baseMipLevel = 0;
+	barrier.subresourceRange.levelCount = 1;
+	barrier.subresourceRange.baseArrayLayer = 0;
+	barrier.subresourceRange.layerCount = 1;
+
+	// Upewnij siê, ¿e wczeœniejsze operacje zapisu w attachment s¹ zakoñczone
+	barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+	vkCmdPipelineBarrier(
+		commandBuffer,
+		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // srcStageMask pozostaje, jeœli to odpowiedni etap dla poprzednich operacji
+		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,   // zmieniony dstStageMask
+		0,              // flagi bariery
+		0, NULL,        // bariery pamiêci
+		0, NULL,        // bariery buforów
+		1, &barrier     // jedna bariera obrazu
+	);
+	vkEndCommandBuffer(commandBuffer);
+
+	
+
 }
 
-void GraphicsEngine::prepare_frame()
-{
+void GraphicsEngine::record_compute_command(VkCommandBuffer commandBuffer , uint32_t imageIndex) {
+
+	// Przygotowanie beginInfo dla command buffera
+
+	
+
+	VkCommandBufferBeginInfo beginInfo = {};
+	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	beginInfo.pNext = nullptr;
+	beginInfo.flags = 0; // lub odpowiednie flagi, jeœli potrzebujesz
+	beginInfo.pInheritanceInfo = nullptr; // dla command bufferów g³ównych
+
+	VkResult result = vkBeginCommandBuffer(commandBuffer, &beginInfo);
+	if (result != VK_SUCCESS) {
+		if (debugMode) {
+			std::cout << "Failed to begin recording compute command buffer! Error code: " << result << std::endl;
+		}
+		// Mo¿esz tutaj zakoñczyæ funkcjê lub podj¹æ inne dzia³anie
+	}
+
+	VkImageMemoryBarrier barrier = { };
+	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	barrier.newLayout = VK_IMAGE_LAYOUT_GENERAL; // lub inny oczekiwany layout
+	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.image = swapchainFrames[imageIndex].postProcessImage; // Twoja zmienna obrazu
+	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	barrier.subresourceRange.baseMipLevel = 0;
+	barrier.subresourceRange.levelCount = 1;
+	barrier.subresourceRange.baseArrayLayer = 0;
+	barrier.subresourceRange.layerCount = 1;
+	barrier.srcAccessMask = 0; // poniewa¿ UNDEFINED nie wymaga synchronizacji
+	barrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT; // zale¿y od dalszego u¿ycia
+
+	vkCmdPipelineBarrier(
+		commandBuffer,
+		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+		VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, // lub inny odpowiedni etap
+		0, 0, NULL, 0, NULL, 1, &barrier
+	);
+	vkUtil::PipelineCacheChunk pipelineInfo = vkResources::scenePipelines->getPipeline("RayCast Pipeline");
+	// Dispatch zadania obliczeniowego
+	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineInfo.pipeline);
+	vkCmdBindDescriptorSets(
+		commandBuffer,
+		VK_PIPELINE_BIND_POINT_COMPUTE,
+		pipelineInfo.pipelineLayout,
+		0,                                   // firstSet
+		1,                                   // descriptorSetCount
+		&swapchainFrames[imageIndex].RayCastDescriptorSet,
+		0,                                   // dynamicOffsetCount
+		nullptr                             // pDynamicOffsets
+	);
+	vkCmdDispatch(commandBuffer,
+		1920/16,
+		(1080+16)/16,
+		1
+	);
+
+
+
+	
+
+	// Zakoñczenie rejestrowania command buffera
+	result = vkEndCommandBuffer(commandBuffer);
+	if (result != VK_SUCCESS) {
+		if (debugMode) {
+			std::cout << "Failed to end recording compute command buffer! Error code: " << result << std::endl;
+		}
+		// Obs³u¿ b³¹d w razie potrzeby
+	}
+
+}
+
+void GraphicsEngine::prepare_frame(uint32_t imageIndex) {
+	vkUtil::SwapChainFrame& _frame = swapchainFrames[imageIndex];
+	_frame.write_descriptors();
 }

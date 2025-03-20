@@ -12,15 +12,24 @@ namespace vkUtil {
 		VkFence inFlight;
 		VkImage mainImage;
 		VkImageView mainImageView;
+		
+
+		//Postprocess
+		VkImage postProcessImage;
+		VkImageView postProcessImageView;
+		VkDeviceMemory postProcessImageBufferMemory;
 
 
-
+		VkSampler sampler;
+		VkDescriptorSet postProcessDescriptorSet;
+		VkDescriptorSet RayCastDescriptorSet;
 
 
 		VkCommandBuffer mainCommandBuffer;
 		VkCommandBuffer computeCommandBuffer;
 		void destroy();
 		void make_descriptors_resources();
+		void write_descriptors();
 	};
 
 }

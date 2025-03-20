@@ -257,6 +257,7 @@ void vkInit::create_logical_device(VkPhysicalDevice& physicalDevice, VkDevice& d
     if (debugMode) {
         std::cout << "Device is successfully created" << std::endl;
     }
+    
     return ;
 }
 void vkInit::get_Queues(VkPhysicalDevice& physicalDevice, VkDevice& device, VkQueue queues[4], VkSurfaceKHR& surface, bool debugMode)

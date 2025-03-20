@@ -2,6 +2,7 @@
 #include <View/vkInit/logging.h>
 #include <View/vkUtil/queues.h>
 #include <View/vkImage/Image.h>
+#include <View/vkInit/attachment.h>
 
 vkInit::SwapChainSupportDetails vkInit::query_swapchain_support(VkPhysicalDevice device, VkSurfaceKHR surface, bool debugMode)
 {
@@ -221,6 +222,7 @@ vkInit::SwapChainBundle vkInit::create_swapchain(VkPhysicalDevice physicalDevice
 			logicalDevice, images[i], bundle.frames[i].mainImageView,format.format, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D, 1
 		);
 
+		  VkInit::create_attachment(physicalDevice, logicalDevice, VkFormat::VK_FORMAT_R32G32B32A32_SFLOAT, VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, extent, bundle.frames[i].postProcessImage, bundle.frames[i].postProcessImageBufferMemory, bundle.frames[i].postProcessImageView);
 		
 	}
 

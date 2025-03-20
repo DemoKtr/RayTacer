@@ -87,11 +87,12 @@ void vkInit::make_descriptor_pool(VkDevice device, VkDescriptorPool& descriptorP
 				const VkDescriptorPoolSize*    pPoolSizes;
 			} VkDescriptorPoolCreateInfo;
 		*/
-
+		poolInfo.sType = VkStructureType::VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 		poolInfo.flags = VkDescriptorPoolCreateFlags();
 		poolInfo.maxSets = size;
 		poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
 		poolInfo.pPoolSizes = poolSizes.data();
+		poolInfo.pNext = nullptr;
 
 		VkResult result = vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool);
 		if (result != VK_SUCCESS) {
@@ -146,6 +147,9 @@ void vkInit::allocate_descriptor_set(VkDevice device, VkDescriptorSet& descripto
 	allocationInfo.descriptorPool = descriptorPool;
 	allocationInfo.descriptorSetCount = 1;
 	allocationInfo.pSetLayouts = &layout;
+	allocationInfo.pNext = nullptr;
+	allocationInfo.sType = VkStructureType::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+
 
 	VkResult result = vkAllocateDescriptorSets(device, &allocationInfo, &descriptorSet);
 	if (result != VK_SUCCESS) {

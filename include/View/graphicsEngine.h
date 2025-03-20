@@ -75,14 +75,14 @@ class GraphicsEngine {
 	
 
 
-	void record_draw_command();
-	void record_compute_command();
+	void record_draw_command(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+	void record_compute_command(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 	
 
 	void prepare_scene();
 	void render_objects();
 
-	void prepare_frame();
+	void prepare_frame(uint32_t imageIndex);
 
 	void build_accelerationStructures();
 	
