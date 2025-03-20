@@ -35,6 +35,104 @@ GraphicsEngine::GraphicsEngine(GLFWwindow* window, int width, int height, bool d
 
 }
 
+void GraphicsEngine::render() {
+	
+
+	vkWaitForFences(device, 1, &swapchainFrames[frameNumber].inFlight, VK_TRUE, UINT64_MAX);
+	vkResetFences(device, 1, &swapchainFrames[frameNumber].inFlight);
+
+
+		uint32_t imageIndex;
+		uint32_t imageIndex;VkResult result = vkAcquireNextImageKHR(
+			device,
+			swapchain,
+			UINT64_MAX,
+			swapchainFrames[frameNumber].imageAvailable, // przyk³ad: semafor dostêpnoœci obrazu
+			nullptr,
+			&imageIndex
+		);
+
+		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_ERROR_INCOMPATIBLE_DISPLAY_KHR) {
+			std::cout << "Recreate" << std::endl;
+			recreate_swapchain();
+			return;
+		}
+		else if (result == VK_SUBOPTIMAL_KHR || result == VK_TIMEOUT) {
+			std::cout << "timeout" << std::endl;
+			return;
+		}
+		else if (result != VK_SUCCESS) {
+			std::cout << "Failed to acquire swapchain image! Error code: " << result << std::endl;
+			return;
+		}
+
+
+		
+
+		prepare_frame();
+
+		VkCommandBuffer MainCommandBuffer = swapchainFrames[frameNumber].mainCommandBuffer;
+		//VkCommandBuffer unlitCommandBuffer = swapchainFrames[frameNumber].unlitCommandBuffer;
+
+	
+		vkResetCommandBuffer(MainCommandBuffer, VkCommandBufferResetFlagBits::VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+
+
+
+
+		record_draw_command();
+
+
+
+		//taskmanager.waitForPriorityTasks(TaskPriority::DESCRIPTORS);
+		VkSubmitInfo submitInfo = {};
+
+		VkSemaphore waitSemaphores[] = { swapchainFrames[frameNumber].imageAvailable };
+		VkPipelineStageFlags waitStages[] = { VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+		submitInfo.waitSemaphoreCount = 1;
+		submitInfo.pWaitSemaphores = waitSemaphores;
+		submitInfo.pWaitDstStageMask = waitStages;
+
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &MainCommandBuffer;
+
+		VkSemaphore signalSemaphores[] = { swapchainFrames[frameNumber].renderFinished };
+		submitInfo.signalSemaphoreCount = 1;
+		submitInfo.pSignalSemaphores = signalSemaphores;
+
+
+		
+			VkResult result = vkQueueSubmit(graphicsQueue, 1, &submitInfo, swapchainFrames[frameNumber].inFlight);
+		
+		if(result != VK_SUCCESS){
+			std::cout << "Synchronization failed" << std::endl;
+		}
+
+		VkPresentInfoKHR presentInfo = {};
+		presentInfo.waitSemaphoreCount = 1;
+		presentInfo.pWaitSemaphores = signalSemaphores;
+
+		VkSwapchainKHR swapChains[] = { swapchain };
+		presentInfo.swapchainCount = 1;
+		presentInfo.pSwapchains = swapChains;
+
+		presentInfo.pImageIndices = &imageIndex;
+
+		VkResult present;
+
+		VkResult present = vkQueuePresentKHR(presentQueue, &presentInfo);
+
+		if (present == VK_ERROR_OUT_OF_DATE_KHR || present == VK_SUBOPTIMAL_KHR) {
+			std::cout << "Recreate" << std::endl;
+			recreate_swapchain();
+			return;
+		}
+
+
+		frameNumber = (frameNumber + 1) % maxFramesInFlight;
+	
+}
+
 GraphicsEngine::~GraphicsEngine() {
 
 	cleanup_swapchain();
@@ -96,11 +194,11 @@ void GraphicsEngine::create_swapchain() {
 	maxFramesInFlight = static_cast<int>(swapchainFrames.size());
 
 	for (vkUtil::SwapChainFrame& frame : swapchainFrames) {
-		frame.device = device;
-		//frame.physicalDevice = physicalDevice;
-		//frame.width = swapchainExtent.width;
-		//frame.height = swapchainExtent.height;
-		//frame.make_depth_resources();
+		frame.logicalDevice = device;
+		frame.physicalDevice = physicalDevice;
+		frame.width = swapchainExtent.width;
+		frame.height = swapchainExtent.height;
+		frame.make_depth_resources();
 
 	}
 	frameNumber = 0;

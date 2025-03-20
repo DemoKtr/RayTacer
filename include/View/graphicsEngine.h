@@ -46,6 +46,11 @@ class GraphicsEngine {
 
 	//commandBuffers
 	VkCommandBuffer maincommandBuffer;
+	VkCommandBuffer transferCommandBuffer;
+	VkCommandBuffer computeCommandBuffer;
+	VkCommandPool CommandPool;
+	VkCommandPool computeCommandPool;
+	VkCommandPool transferCommandPool;
 
 
 
