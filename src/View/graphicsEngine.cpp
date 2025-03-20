@@ -7,6 +7,7 @@
 #include <View/vkInit/swapchain.h>
 #include <View/vkUtil/Pipelines/pipelineCache.h>
 #include <View/vkUtil/Pipelines/computePipelineBuilder.h>
+#include <View/vkInit/descriptors.h>
 
 
 
@@ -24,13 +25,13 @@ GraphicsEngine::GraphicsEngine(GLFWwindow* window, int width, int height, bool d
 	make_instance();
 	choice_device();
 	create_swapchain();
-
+	create_descriptor_set_layouts();
 	create_pipeline();
 
-	//finalize_setup();
+	finalize_setup();
 
 
-	//make_assets();
+	make_assets();
 
 }
 
@@ -156,4 +157,70 @@ void GraphicsEngine::create_pipeline() {
 	pipelineBuilder.reset();
 	*/
 	
+}
+
+void GraphicsEngine::finalize_setup() {
+
+}
+
+void GraphicsEngine::make_assets() {
+
+}
+
+
+void GraphicsEngine::create_frame_command_buffer() {
+	/*
+	CommandPool = vkInit::make_command_pool(physicalDevice, device, surface, debugMode);
+	computeCommandPool = vkInit::make_compute_command_pool(physicalDevice, device, surface, debugMode);
+	transferCommandPool = vkInit::make_transfer_command_pool(physicalDevice, device, surface, debugMode);
+	vkInit::commandBufferInputChunk commandBufferInput = { device,CommandPool, swapchainFrames };
+	maincommandBuffer = vkInit::make_command_buffer(commandBufferInput, debugMode);
+	vkInit::make_imgui_frame_command_buffers(commandBufferInput, debugMode);
+
+	commandBufferInput.commandPool = computeCommandPool;
+	computeCommandBuffer = vkInit::make_command_buffer(commandBufferInput, debugMode);
+	commandBufferInput.commandPool = transferCommandPool;
+	transferCommandBuffer = vkInit::make_command_buffer(commandBufferInput, debugMode);
+	*/
+}
+
+void GraphicsEngine::create_frame_resources(int number_of_models) {
+	/*
+	vkInit::descriptorSetLayoutData bindings;
+	bindings.count = 2;
+	bindings.types.push_back(vk::DescriptorType::eUniformBuffer);
+	bindings.types.push_back(vk::DescriptorType::eStorageBuffer);
+	DescriptorPool = vkInit::make_descriptor_pool(device, static_cast<uint32_t>(swapchainFrames.size()), bindings);
+	
+
+	for (vkUtil::SwapChainFrame& frame : swapchainFrames) //referencja 
+	{
+		frame.imageAvailable = vkInit::make_semaphore(device, debugMode);
+		frame.renderFinished = vkInit::make_semaphore(device, debugMode);
+		frame.computeFinished = vkInit::make_semaphore(device, debugMode);
+		frame.inFlight = vkInit::make_fence(device, debugMode);
+		frame.make_descriptors_resources(number_of_models);
+		frame.DescriptorSet = vkInit::allocate_descriptor_set(device, DescriptorPool, DescriptorSetLayout);
+
+
+	}
+	*/
+}
+
+void GraphicsEngine::create_descriptor_set_layouts() {
+	/*
+	vkInit::descriptorSetLayoutData bindings;
+	bindings.count = 2;
+	bindings.indices.push_back(0);
+	bindings.types.push_back(vk::DescriptorType::eUniformBuffer);
+	bindings.counts.push_back(1);
+	bindings.stages.push_back(vk::ShaderStageFlagBits::eVertex);
+
+	bindings.indices.push_back(1);
+	bindings.types.push_back(vk::DescriptorType::eStorageBuffer);
+	bindings.counts.push_back(1);
+	bindings.stages.push_back(vk::ShaderStageFlagBits::eVertex);
+
+	postprocessDescriptorSetLayout = vkInit::make_descriptor_set_layout(device, bindings);
+	*/
 }

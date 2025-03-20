@@ -61,7 +61,7 @@ class GraphicsEngine {
 	void make_assets();
 	void create_frame_command_buffer();
 	void create_frame_resources(int number_of_models);
-
+	void create_descriptor_set_layouts();
 	
 
 
@@ -76,7 +76,7 @@ class GraphicsEngine {
 
 	void build_accelerationStructures();
 	
-	void initial_cubemap();
+	
 public:
 	GraphicsEngine(GLFWwindow* window, int width, int height, bool debugMode);
 	void render();
