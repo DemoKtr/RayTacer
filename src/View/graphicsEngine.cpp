@@ -10,6 +10,7 @@
 #include <View/vkInit/descriptors.h>
 #include <View/vkInit/synchronizer.h>
 #include <View/vkInit/commands.h>
+#include <View/vkResources/resources.h>
 
 
 
@@ -28,6 +29,7 @@ GraphicsEngine::GraphicsEngine(GLFWwindow* window, int width, int height, bool d
 
 	make_instance();
 	choice_device();
+	vkResources::scenePipelines = new vkUtil::PipelineCache(device);
 	create_swapchain();
 	create_descriptor_set_layouts();
 	create_pipeline();
@@ -139,7 +141,7 @@ void GraphicsEngine::render() {
 }
 
 GraphicsEngine::~GraphicsEngine() {
-
+	delete vkResources::scenePipelines;
 	vkDestroyCommandPool(device, CommandPool, nullptr);
 	vkDestroyCommandPool(device, computeCommandPool, nullptr);
 	vkDestroyCommandPool(device, transferCommandPool, nullptr);
@@ -241,41 +243,32 @@ void GraphicsEngine::create_pipeline() {
 	
 
 	vkInit::PipelineBuilder pipelineBuilder(device);
-	/*
 	pipelineBuilder.set_overwrite_mode(true);
-	pipelineBuilder.specify_vertex_format(
-		vkMesh::getVertexInputBindingDescription(),
-		vkMesh::getVertexInputAttributeDescription());
 	pipelineBuilder.specify_vertex_shader("resources/shaders/vert.spv");
 	pipelineBuilder.specify_fragment_shader("resources/shaders/frag.spv");
 	pipelineBuilder.specify_swapchain_extent(swapchainExtent);
 	pipelineBuilder.clear_depth_attachment();
 	pipelineBuilder.set_color_blending(false);
-	pipelineBuilder.add_descriptor_set_layout(postprocessDescriptorSetLayout);
-	pipelineBuilder.add_descriptor_set_layout(textureDescriptorSetLayout);
-	pipelineBuilder.use_depth_test(true);
-	pipelineBuilder.setPushConstants();
+	pipelineBuilder.add_descriptor_set_layout(finalImageDescriptorSetLayout);
+	pipelineBuilder.use_depth_test(false);
 	pipelineBuilder.dynamicRendering = true;
-	vkUtil::GraphicsPipelineOutBundle output = pipelineBuilder.build(vk::Format::eR32G32B32A32Sfloat, swapchainFrames[0].depthFormat);
-
+	vkUtil::GraphicsPipelineOutBundle output = pipelineBuilder.build(swapchainFormat);
 	pipeline.pipelineLayout = output.layout;
 	pipeline.pipeline = output.pipeline;
-
-	vkResources::scenePipelines->addPipeline("Unlit Pipeline", pipeline);
-	pipelineBuilder.reset();
-	*/
-	/*
+	vkResources::scenePipelines->addPipeline("Finall Image", pipeline);
+	//pipelineBuilder.reset();
+	
 	vkInit::ComputePipelineBuilder computePipelineBuilder(device);
-	computePipelineBuilder.add_descriptor_set_layout();
-	computePipelineBuilder.set_push_constant();
-	computePipelineBuilder.specify_compute_shader();
-	vkUtil::GraphicsPipelineOutBundle output = computePipelineBuilder.build(true);
+	//computePipelineBuilder.add_descriptor_set_layout();
+	//computePipelineBuilder.set_push_constant();
+	computePipelineBuilder.specify_compute_shader("resources/shaders/compute.spv");
+	output = computePipelineBuilder.build(true);
 	pipeline.pipelineLayout = output.layout;
 	pipeline.pipeline = output.pipeline;
 
-	vkResources::scenePipelines->addPipeline("Unlit Pipeline", pipeline);
-	pipelineBuilder.reset();
-	*/
+	vkResources::scenePipelines->addPipeline("RayCast Pipeline", pipeline);
+	//computePipelineBuilder.reset();
+	
 	
 }
 
@@ -296,10 +289,11 @@ void GraphicsEngine::create_frame_command_buffer() {
 	vkInit::make_transfer_command_pool(physicalDevice, device, transferCommandPool,surface, debugMode);
 	vkInit::commandBufferInputChunk commandBufferInput = { device,CommandPool, swapchainFrames, maincommandBuffer };
 	vkInit::make_command_buffer(commandBufferInput, debugMode);
-	vkInit::make_imgui_frame_command_buffers(commandBufferInput, debugMode);
+	vkInit::make_frame_command_buffers(commandBufferInput, debugMode);
 
 	commandBufferInput.commandPool = computeCommandPool;
 	commandBufferInput.commandBuffer = computeCommandBuffer;
+	vkInit::make_frame_compute_command_buffers(commandBufferInput, debugMode);
 	vkInit::make_command_buffer(commandBufferInput, debugMode);
 	commandBufferInput.commandPool = transferCommandPool;
 	commandBufferInput.commandBuffer = transferCommandBuffer;
@@ -331,21 +325,18 @@ void GraphicsEngine::create_frame_resources() {
 }
 
 void GraphicsEngine::create_descriptor_set_layouts() {
-	/*
+	
 	vkInit::descriptorSetLayoutData bindings;
-	bindings.count = 2;
+	bindings.count = 1;
 	bindings.indices.push_back(0);
-	bindings.types.push_back(vk::DescriptorType::eUniformBuffer);
+	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 	bindings.counts.push_back(1);
-	bindings.stages.push_back(vk::ShaderStageFlagBits::eVertex);
+	bindings.stages.push_back(VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT);
 
-	bindings.indices.push_back(1);
-	bindings.types.push_back(vk::DescriptorType::eStorageBuffer);
-	bindings.counts.push_back(1);
-	bindings.stages.push_back(vk::ShaderStageFlagBits::eVertex);
 
-	postprocessDescriptorSetLayout = vkInit::make_descriptor_set_layout(device, bindings);
-	*/
+
+	vkInit::make_descriptor_set_layout(device, bindings, finalImageDescriptorSetLayout);
+	
 }
 
 void GraphicsEngine::record_draw_command()

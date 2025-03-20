@@ -30,7 +30,7 @@ public:
 	float deltaTime = 0.0f;
 };
 
-
+int myMax(int a, int b);
 
 #endif // !APP_H
 

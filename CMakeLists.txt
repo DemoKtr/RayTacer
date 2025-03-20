@@ -66,3 +66,7 @@ target_link_libraries(${PROJECT_NAME}
   glfw
   
 )
+
+set(RESOURCE_DIR "${CMAKE_SOURCE_DIR}/resources")
+# Skopiuj folder 'resource' do folderu build w czasie konfiguracji
+file(COPY ${RESOURCE_DIR} DESTINATION ${CMAKE_BINARY_DIR})

@@ -5,7 +5,9 @@
 
 vkInit::ComputePipelineBuilder::ComputePipelineBuilder(VkDevice device){
     this->device = device;
-    reset();
+    pushConstantCount = 0;
+    pushConstantInfo.offset = 0;
+    pushConstantInfo.size = 0;
 
    
 }
@@ -30,8 +32,9 @@ void vkInit::ComputePipelineBuilder::reset_descriptor_set_layouts() {
 void vkInit::ComputePipelineBuilder::reset_shader_modules() {
     if (computeShader) {
         vkDestroyShaderModule(device, computeShader, nullptr);
+        computeShader = nullptr;
     }
-    shaderStages.clear();
+    
 }
 
 vkUtil::GraphicsPipelineOutBundle vkInit::ComputePipelineBuilder::build(bool debugMode) {
@@ -42,9 +45,11 @@ vkUtil::GraphicsPipelineOutBundle vkInit::ComputePipelineBuilder::build(bool deb
     computePipelineCreateInfo.sType = VkStructureType::VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
     computePipelineCreateInfo.layout = ComputePipelineLayout;
     computePipelineCreateInfo.flags = {};
+  
     computePipelineCreateInfo.stage = computeShaderInfo;
     
     
+
     VkPipeline computePipeline = {};
     if (debugMode) std::cout << "Creating compute particle Pipeline " << std::endl;
     VkResult result = vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &computePipelineCreateInfo, nullptr, &computePipeline);
@@ -83,8 +88,8 @@ void vkInit::ComputePipelineBuilder::make_pipeline_layout(VkPipelineLayout& pipe
 
     layoutInfo.pushConstantRangeCount = pushConstantCount;
     layoutInfo.pPushConstantRanges = &pushConstantInfo;
-
-
+    layoutInfo.sType = VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    layoutInfo.pNext = nullptr;
 
 
     VkResult result = vkCreatePipelineLayout(device, &layoutInfo, nullptr, &pipelineLayout);
@@ -102,8 +107,9 @@ void vkInit::ComputePipelineBuilder::specify_compute_shader(const char* filename
 
     std::cout << "Create compute shader module" << std::endl;
     vkUtil::createModule(filename, device, computeShader);
-    computeShaderInfo = make_shader_info(computeShader, VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT);
-    shaderStages.push_back(computeShaderInfo);
+    computeShaderInfo = make_shader_info(computeShader, VkShaderStageFlagBits::VK_SHADER_STAGE_COMPUTE_BIT);
+   
+    
 }
 
 void vkInit::ComputePipelineBuilder::set_push_constant(VkShaderStageFlags stage, size_t size, int count) {
@@ -121,6 +127,7 @@ void vkInit::ComputePipelineBuilder::add_descriptor_set_layout(VkDescriptorSetLa
 VkPipelineShaderStageCreateInfo vkInit::ComputePipelineBuilder::make_shader_info(const VkShaderModule& shaderModule, const VkShaderStageFlagBits& stage) {
 
     VkPipelineShaderStageCreateInfo shaderInfo = {};
+    shaderInfo.sType = VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     shaderInfo.flags = VkPipelineShaderStageCreateFlags();
     shaderInfo.stage = stage;
     shaderInfo.module = shaderModule;

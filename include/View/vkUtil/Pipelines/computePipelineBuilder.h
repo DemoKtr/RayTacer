@@ -13,8 +13,8 @@ namespace vkInit {
 		VkDevice device;
 		VkPushConstantRange pushConstantInfo;
 		int pushConstantCount = 0;
-		std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
-		void reset();
+		
+		
 		
 
 	public:
@@ -32,6 +32,7 @@ namespace vkInit {
 
 		void reset_descriptor_set_layouts();
 		void reset_shader_modules();
+		void reset();
 	};
 
 }

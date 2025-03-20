@@ -62,31 +62,46 @@ void vkInit::make_command_buffer(commandBufferInputChunk inputChunk, bool debugM
 	
 }
 
-void vkInit::make_imgui_frame_command_buffers(commandBufferInputChunk inputChunk, bool debugMode) {
-	/*
+void vkInit::make_frame_command_buffers(commandBufferInputChunk inputChunk, bool debugMode) {
+	
 	VkCommandBufferAllocateInfo mainAllocInfo = {};
 	mainAllocInfo.commandPool = inputChunk.commandPool;
 	mainAllocInfo.level = VkCommandBufferLevel::VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	mainAllocInfo.commandBufferCount = 1;
-
-	VkCommandBufferAllocateInfo seccAllocInfo = {};
-	seccAllocInfo.commandPool = inputChunk.commandPool;
-	seccAllocInfo.level = VkCommandBufferLevel::VK_COMMAND_BUFFER_LEVEL_SECONDARY;
-	seccAllocInfo.commandBufferCount = 1;
-
+	mainAllocInfo.sType = VkStructureType::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 
 
 	for (int i = 0; i < inputChunk.frames.size(); ++i) {
-		VkResult result = vkAllocateCommandBuffers(inputChunk.device, &allocInfo, commandBuffers);
+		VkResult result = vkAllocateCommandBuffers(inputChunk.device, &mainAllocInfo, &inputChunk.frames[i].mainCommandBuffer);
 		if (result != VK_SUCCESS) {
-			std::cout << "FAILED!!! Allocated command buffer for frame " << frameIndex << ", error code: " << result << std::endl;
+			std::cout << "FAILED!!! Allocated command buffer for frame " << i << ", error code: " << result << std::endl;
 		}
 		else {
 			if (debugMode)
-				std::cout << "Allocated command buffers for frame " << frameIndex << std::endl;
+				std::cout << "Allocated command buffers for frame " << i << std::endl;
 		}
 	}
-	*/
+	
+}
+
+void vkInit::make_frame_compute_command_buffers(commandBufferInputChunk inputChunk, bool debugMode){
+	VkCommandBufferAllocateInfo mainAllocInfo = {};
+	mainAllocInfo.commandPool = inputChunk.commandPool;
+	mainAllocInfo.level = VkCommandBufferLevel::VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	mainAllocInfo.commandBufferCount = 1;
+	mainAllocInfo.sType = VkStructureType::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+
+
+	for (int i = 0; i < inputChunk.frames.size(); ++i) {
+		VkResult result = vkAllocateCommandBuffers(inputChunk.device, &mainAllocInfo, &inputChunk.frames[i].computeCommandBuffer);
+		if (result != VK_SUCCESS) {
+			std::cout << "FAILED!!! Allocated command buffer for frame " << i << ", error code: " << result << std::endl;
+		}
+		else {
+			if (debugMode)
+				std::cout << "Allocated command buffers for frame " << i << std::endl;
+		}
+	}
 }
 
 void vkInit::make_postprocess_frame_command_buffers(commandBufferInputChunk inputChunk, bool debugMode) {

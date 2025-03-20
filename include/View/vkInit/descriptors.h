@@ -21,7 +21,7 @@ namespace vkInit
 		\param bindings	a struct describing the bindings used in the shader
 		\returns the created descriptor set layout
 	*/
-	void make_descriptor_set_layout(VkDevice device, const descriptorSetLayoutData& bindings, VkDescriptorSetLayout descriptorSetLayout);
+	void make_descriptor_set_layout(VkDevice device, const descriptorSetLayoutData& bindings, VkDescriptorSetLayout& descriptorSetLayout);
 
 	/**
 		Make a descriptor pool

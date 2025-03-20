@@ -21,7 +21,8 @@ namespace vkInit {
 
 
 
-	void make_imgui_frame_command_buffers(commandBufferInputChunk inputChunk, bool debugMode);
+	void make_frame_command_buffers(commandBufferInputChunk inputChunk, bool debugMode);
+	void make_frame_compute_command_buffers(commandBufferInputChunk inputChunk, bool debugMode);
 	void make_postprocess_frame_command_buffers(commandBufferInputChunk inputChunk, bool debugMode);
 
 }

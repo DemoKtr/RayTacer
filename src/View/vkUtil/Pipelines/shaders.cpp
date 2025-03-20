@@ -27,6 +27,7 @@ void vkUtil::createModule(std::string filename, VkDevice device, VkShaderModule&
 	moduleInfo.flags = VkShaderModuleCreateFlags();
 	moduleInfo.codeSize = sourceCode.size();
 	moduleInfo.pCode = reinterpret_cast<const uint32_t*>(sourceCode.data());
+	moduleInfo.sType = VkStructureType::VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 
 	
 	VkResult result = vkCreateShaderModule(device, &moduleInfo, nullptr, &shaderModule);

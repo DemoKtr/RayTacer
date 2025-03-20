@@ -1,6 +1,6 @@
 #include "View/vkInit/descriptors.h"
 
-void vkInit::make_descriptor_set_layout(VkDevice device, const descriptorSetLayoutData& bindings, VkDescriptorSetLayout descriptorSetLayout) {
+void vkInit::make_descriptor_set_layout(VkDevice device, const descriptorSetLayoutData& bindings, VkDescriptorSetLayout& descriptorSetLayout) {
 
 	/*
 		 Bindings describes a whole bunch of descriptor types, collect them all into a
@@ -26,7 +26,9 @@ void vkInit::make_descriptor_set_layout(VkDevice device, const descriptorSetLayo
 		layoutBinding.descriptorType = bindings.types[i];
 		layoutBinding.descriptorCount = bindings.counts[i];
 		layoutBinding.stageFlags = bindings.stages[i];
+		layoutBinding.pImmutableSamplers = nullptr;
 		layoutBindings.push_back(layoutBinding);
+		
 	}
 
 	/*
@@ -38,10 +40,13 @@ void vkInit::make_descriptor_set_layout(VkDevice device, const descriptorSetLayo
 			const VkDescriptorSetLayoutBinding*    pBindings;
 		} VkDescriptorSetLayoutCreateInfo;
 	*/
-	VkDescriptorSetLayoutCreateInfo layoutInfo;
-	layoutInfo.flags = VkDescriptorSetLayoutCreateFlagBits();
+	VkDescriptorSetLayoutCreateInfo layoutInfo{};
+	layoutInfo.flags = VkDescriptorSetLayoutCreateFlags();
 	layoutInfo.bindingCount = bindings.count;
 	layoutInfo.pBindings = layoutBindings.data(); 
+	layoutInfo.sType = VkStructureType::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+
+
 	VkResult result = vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout);
 
 	if (result != VK_SUCCESS) {

@@ -53,6 +53,11 @@ class GraphicsEngine {
 	VkCommandPool transferCommandPool;
 
 
+	VkDescriptorPool rayCastDescriptorPool;
+	VkDescriptorPool finalImageDescriptorPool;
+
+	VkDescriptorSetLayout rayCastDescriptorSetLayout;
+	VkDescriptorSetLayout finalImageDescriptorSetLayout;
 
 	std::vector<vkUtil::SwapChainFrame> swapchainFrames;
 
@@ -71,8 +76,8 @@ class GraphicsEngine {
 
 
 	void record_draw_command();
-	void record_unlit_draw_command();
-	void record_pbr_draw_command();
+	void record_compute_command();
+	
 
 	void prepare_scene();
 	void render_objects();

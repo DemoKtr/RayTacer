@@ -4,7 +4,7 @@
 vkInit::PipelineBuilder::PipelineBuilder(VkDevice device) {
 	this->device = device;
 	reset();
-
+	vertexInputInfo.sType = VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 	//Some stages are fixed with sensible defaults and don't
 	//need to be reconfigured
 	configure_input_assembly();
@@ -58,7 +58,7 @@ vkUtil::GraphicsPipelineOutBundle vkInit::PipelineBuilder::build(VkFormat imageF
 	VkPipelineLayout pipelineLayout;
 	make_pipeline_layout(pipelineLayout);
 	pipelineInfo.layout = pipelineLayout;
-
+	pipelineInfo.sType = VkStructureType::VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 
 
 	VkPipelineRenderingCreateInfoKHR pipeline_rendering_create_info = {};
@@ -113,7 +113,7 @@ void vkInit::PipelineBuilder::reset_descriptor_set_layouts() {
 void vkInit::PipelineBuilder::specify_vertex_format(VkVertexInputBindingDescription bindingDescription, std::vector<VkVertexInputAttributeDescription> attributeDescriptions) {
 	this->bindingDescription = bindingDescription;
 	this->attributeDescriptions = attributeDescriptions;
-
+	vertexInputInfo.sType = VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 	vertexInputInfo.vertexBindingDescriptionCount = 1;
 	vertexInputInfo.pVertexBindingDescriptions = &(this->bindingDescription);
 	vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(this->attributeDescriptions.size());
@@ -129,6 +129,7 @@ void vkInit::PipelineBuilder::specify_vertex_shader(const char* filename) {
 	std::cout << "Create vertex shader module" << std::endl;
 	vkUtil::createModule(filename, device,vertexShader);
 	vertexShaderInfo = make_shader_info(vertexShader, VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT);
+	//vertexShaderInfo.sType = VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	shaderStages.push_back(vertexShaderInfo);
 }
 
@@ -141,6 +142,7 @@ void vkInit::PipelineBuilder::specify_fragment_shader(const char* filename) {
 	std::cout << "Create fragment shader module" << std::endl;
 	vkUtil::createModule(filename, device, fragmentShader);
 	fragmentShaderInfo = make_shader_info(fragmentShader, VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT);
+	//fragmentShaderInfo.sType = VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	shaderStages.push_back(fragmentShaderInfo);
 }
 
@@ -170,6 +172,7 @@ void vkInit::PipelineBuilder::setPushConstants(VkShaderStageFlags stage,size_t s
 
 VkPipelineShaderStageCreateInfo vkInit::PipelineBuilder::make_shader_info(const VkShaderModule& shaderModule, const VkShaderStageFlagBits& stage) {
 	VkPipelineShaderStageCreateInfo shaderInfo = {};
+	shaderInfo.sType = VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	shaderInfo.flags = VkPipelineShaderStageCreateFlags();
 	shaderInfo.stage = stage;
 	shaderInfo.module = shaderModule;
@@ -191,6 +194,7 @@ VkPipelineViewportStateCreateInfo vkInit::PipelineBuilder::make_viewport_state()
 	scissor.extent = swapchainExtent;
 
 	viewportState.flags = VkPipelineViewportStateCreateFlags();
+	viewportState.sType = VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
 	viewportState.viewportCount = 1;
 	viewportState.pViewports = &viewport;
 	viewportState.scissorCount = 1;
@@ -201,6 +205,7 @@ VkPipelineViewportStateCreateInfo vkInit::PipelineBuilder::make_viewport_state()
 
 void vkInit::PipelineBuilder::make_rasterizer_info() {
 	rasterizer.flags = VkPipelineRasterizationStateCreateFlags();
+	rasterizer.sType = VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 	rasterizer.depthClampEnable = VK_FALSE; //discard out of bounds fragments, don't clamp them
 	rasterizer.rasterizerDiscardEnable = VK_FALSE; //This flag would disable fragment output
 	rasterizer.polygonMode = VkPolygonMode::VK_POLYGON_MODE_FILL;
@@ -213,10 +218,12 @@ void vkInit::PipelineBuilder::make_rasterizer_info() {
 void vkInit::PipelineBuilder::configure_input_assembly() {
 	inputAssemblyInfo.flags = VkPipelineInputAssemblyStateCreateFlags();
 	inputAssemblyInfo.topology = VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	inputAssemblyInfo.sType = VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
 }
 
 void vkInit::PipelineBuilder::configure_multisampling() {
 	multisampling.flags = VkPipelineMultisampleStateCreateFlags();
+	multisampling.sType = VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 	multisampling.sampleShadingEnable = VK_FALSE;
 	multisampling.rasterizationSamples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
 }
@@ -224,6 +231,7 @@ void vkInit::PipelineBuilder::configure_multisampling() {
 void vkInit::PipelineBuilder::set_depth() {
 	if (useDepthTest) {
 		depthState.flags = VkPipelineDepthStencilStateCreateFlags();
+		depthState.sType = VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
 		depthState.depthTestEnable = true;
 		depthState.depthWriteEnable = true;
 		depthState.depthCompareOp = VkCompareOp::VK_COMPARE_OP_LESS;
@@ -233,6 +241,7 @@ void vkInit::PipelineBuilder::set_depth() {
 	}
 	else {
 		depthState.flags = VkPipelineDepthStencilStateCreateFlags();
+		depthState.sType = VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
 		depthState.depthTestEnable = false;
 		depthState.depthWriteEnable = false;
 		depthState.depthCompareOp = VkCompareOp::VK_COMPARE_OP_ALWAYS;
@@ -244,6 +253,7 @@ void vkInit::PipelineBuilder::set_depth() {
 
 void vkInit::PipelineBuilder::configure_color_blending() {
 	colorBlendAttachment.colorWriteMask = VkColorComponentFlagBits::VK_COLOR_COMPONENT_R_BIT | VkColorComponentFlagBits::VK_COLOR_COMPONENT_G_BIT | VkColorComponentFlagBits::VK_COLOR_COMPONENT_B_BIT | VkColorComponentFlagBits::VK_COLOR_COMPONENT_A_BIT;
+
 	if (!useColorBlending) {
 		colorBlendAttachment.blendEnable = VK_FALSE;
 	}
@@ -259,6 +269,7 @@ void vkInit::PipelineBuilder::configure_color_blending() {
 
 
 	colorBlending.flags = VkPipelineColorBlendStateCreateFlags();
+	colorBlending.sType = VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
 	colorBlending.logicOpEnable = VK_FALSE;
 	colorBlending.logicOp = VkLogicOp::VK_LOGIC_OP_COPY;
 	if (dynamicRendering) {
@@ -292,10 +303,11 @@ VkPipelineLayout vkInit::PipelineBuilder::make_pipeline_layout(VkPipelineLayout&
 
 	VkPipelineLayoutCreateInfo layoutInfo;
 	layoutInfo.flags = VkPipelineLayoutCreateFlags();
-
+	layoutInfo.sType = VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	layoutInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
 	layoutInfo.pSetLayouts = descriptorSetLayouts.data();
-
+	layoutInfo.pNext = nullptr;
+	
 
 
 	layoutInfo.pushConstantRangeCount = pushConstantCount;

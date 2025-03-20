@@ -1,5 +1,6 @@
 #include "app.h"
-
+#include <iostream>
+#include <sstream>
 void App::build_glfw_window(int width, int height, bool debugMode) {
 	glfwInit();
 
@@ -29,6 +30,26 @@ void App::build_glfw_window(int width, int height, bool debugMode) {
 	//glfwSetMouseButtonCallback(window, mouseButtonCallback);
 }
 
+void App::calculateFrameRate() {
+	currentTime = glfwGetTime();
+	double delta = currentTime - lastTime;
+
+	if (delta >= 1) {
+		int framerate = myMax(1, static_cast<int>(numFrames / delta));
+
+
+		std::stringstream title{};
+		title << "Running at " << framerate << " fps";
+		glfwSetWindowTitle(window, title.str().c_str());
+
+		lastTime = currentTime;
+		numFrames = -1;
+		frameTime = float(1000.0 / framerate);
+	}
+
+	++numFrames;
+}
+
 App::App(int width, int height, bool debugMode) {
 	build_glfw_window(width,height, debugMode);
 
@@ -51,4 +72,23 @@ App::~App() {
 }
 
 void App::run() {
+
+	size_t i = 0;
+	while (!glfwWindowShouldClose(window)) {
+		float currentFrame = static_cast<float>(glfwGetTime());
+
+		deltaTime = currentFrame - lastFrame;
+		lastFrame = currentFrame;
+		//processInput(window);
+		glfwPollEvents();
+		
+
+		graphicsEngine->render();
+		calculateFrameRate();
+
+	}
+}
+
+int myMax(int a, int b) {
+	return (a > b) ? a : b;
 }
