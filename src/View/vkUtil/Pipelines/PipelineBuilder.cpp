@@ -210,7 +210,7 @@ void vkInit::PipelineBuilder::make_rasterizer_info() {
 	rasterizer.rasterizerDiscardEnable = VK_FALSE; //This flag would disable fragment output
 	rasterizer.polygonMode = VkPolygonMode::VK_POLYGON_MODE_FILL;
 	rasterizer.lineWidth = 1.0f;
-	rasterizer.cullMode = VkCullModeFlagBits::VK_CULL_MODE_BACK_BIT;
+	rasterizer.cullMode = VkCullModeFlagBits::VK_CULL_MODE_FRONT_BIT;
 	rasterizer.frontFace = VkFrontFace::VK_FRONT_FACE_COUNTER_CLOCKWISE;
 	rasterizer.depthBiasEnable = VK_FALSE; //Depth bias can be useful in shadow maps.
 }
