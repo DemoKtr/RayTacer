@@ -7,6 +7,7 @@
 #include <View/vkInit/swapchain.h>
 #include <View/vkUtil/Pipelines/pipelineCache.h>
 #include <View/vkUtil/Pipelines/computePipelineBuilder.h>
+#include "View/vkUtil/Pipelines/rayTracingPipelineBuilder.h"
 #include <View/vkInit/descriptors.h>
 #include <View/vkInit/synchronizer.h>
 #include <View/vkInit/commands.h>
@@ -162,6 +163,7 @@ void GraphicsEngine::render() {
 
 GraphicsEngine::~GraphicsEngine() {
 	delete vkResources::scenePipelines;
+	delete accelerationStructure;
 	vkDestroyCommandPool(device, CommandPool, nullptr);
 	vkDestroyCommandPool(device, computeCommandPool, nullptr);
 	vkDestroyCommandPool(device, transferCommandPool, nullptr);
@@ -289,7 +291,16 @@ void GraphicsEngine::create_pipeline() {
 	vkResources::scenePipelines->addPipeline("RayCast Pipeline", pipeline);
 	//computePipelineBuilder.reset();
 	
-	
+	vkInit::RayTracingPipelineBuilder rayBuilder(physicalDevice,device);
+	rayBuilder.add_descriptor_set_layout(rayGenDescriptorSetLayout);
+	rayBuilder.specify_ray_gen_shader("resources/shaders/raygen.spv");
+	rayBuilder.specify_miss_shader("resources/shaders/miss.spv");
+	rayBuilder.specify_closest_hit_shader("resources/shaders/closesthit.spv");
+	rayBuilder.build();
+	pipeline.pipelineLayout = output.layout;
+	pipeline.pipeline = output.pipeline;
+
+	vkResources::scenePipelines->addPipeline("Ray", pipeline);
 }
 
 void GraphicsEngine::finalize_setup() {
@@ -298,26 +309,36 @@ void GraphicsEngine::finalize_setup() {
 }
 
 void GraphicsEngine::make_assets() {
-
+	accelerationStructure = new vkAccelerationStructure::VertexMenagerie();
+	vkAccelerationStructure::FinalizationChunk input;
+	input.logicalDevice = device;
+	input.physicalDevice = physicalDevice;
+	input.queue = graphicsQueue;
+	input.commandBuffer = maincommandBuffer;
+	accelerationStructure->finalize(input, CommandPool);
 }
 
 
 void GraphicsEngine::create_frame_command_buffer() {
 	
 	vkInit::make_command_pool(physicalDevice, device,CommandPool ,surface, debugMode);
+
 	vkInit::make_compute_command_pool(physicalDevice, device, computeCommandPool,surface, debugMode);
 	vkInit::make_transfer_command_pool(physicalDevice, device, transferCommandPool,surface, debugMode);
-	vkInit::commandBufferInputChunk commandBufferInput = { device,CommandPool, swapchainFrames, maincommandBuffer };
-	vkInit::make_command_buffer(commandBufferInput, debugMode);
+
+	vkInit::commandBufferInputChunk commandBufferInput = { device,CommandPool, swapchainFrames};
+
+	vkInit::make_command_buffer(commandBufferInput,maincommandBuffer ,debugMode);
 	vkInit::make_frame_command_buffers(commandBufferInput, debugMode);
 
 	commandBufferInput.commandPool = computeCommandPool;
-	commandBufferInput.commandBuffer = computeCommandBuffer;
+
 	vkInit::make_frame_compute_command_buffers(commandBufferInput, debugMode);
-	vkInit::make_command_buffer(commandBufferInput, debugMode);
+
+	vkInit::make_command_buffer(commandBufferInput,computeCommandBuffer ,debugMode);
 	commandBufferInput.commandPool = transferCommandPool;
-	commandBufferInput.commandBuffer = transferCommandBuffer;
-	vkInit::make_command_buffer(commandBufferInput, debugMode);
+
+	vkInit::make_command_buffer(commandBufferInput,transferCommandBuffer ,debugMode);
 	
 }
 
@@ -332,6 +353,11 @@ void GraphicsEngine::create_frame_resources() {
 	bindings.types[0] = VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 	vkInit::make_descriptor_pool(device, rayCastDescriptorPool, static_cast<uint32_t>(swapchainFrames.size()), bindings);
 
+	bindings.count = 3;
+	bindings.types[0] = VkDescriptorType::VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+	vkInit::make_descriptor_pool(device, rayGenDescriptorPool, static_cast<uint32_t>(swapchainFrames.size()), bindings);
 	for (vkUtil::SwapChainFrame& frame : swapchainFrames) //referencja 
 	{
 		vkInit::make_semaphore(device, frame.imageAvailable,debugMode);
@@ -341,6 +367,7 @@ void GraphicsEngine::create_frame_resources() {
 		frame.make_descriptors_resources();
 		vkInit::allocate_descriptor_set(device, frame.postProcessDescriptorSet,finalImageDescriptorPool, finalImageDescriptorSetLayout);
 		vkInit::allocate_descriptor_set(device, frame.RayCastDescriptorSet,rayCastDescriptorPool, rayCastDescriptorSetLayout);
+		vkInit::allocate_descriptor_set(device, frame.RayGenDescriptorSet,rayGenDescriptorPool, rayGenDescriptorSetLayout);
 		
 
 
@@ -363,6 +390,25 @@ void GraphicsEngine::create_descriptor_set_layouts() {
 	bindings.types[0] = VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 	bindings.stages[0] = (VkShaderStageFlagBits::VK_SHADER_STAGE_COMPUTE_BIT);
 	vkInit::make_descriptor_set_layout(device, bindings, rayCastDescriptorSetLayout);
+
+
+	bindings.count = 3;
+
+	bindings.types[0] = VkDescriptorType::VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+	bindings.stages[0] = (VkShaderStageFlagBits::VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+	
+
+	bindings.indices.push_back(1);
+	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+	bindings.counts.push_back(1);
+	bindings.stages.push_back(VkShaderStageFlagBits::VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+
+	bindings.indices.push_back(2);
+	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+	bindings.counts.push_back(1);
+	bindings.stages.push_back(VkShaderStageFlagBits::VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+
+	vkInit::make_descriptor_set_layout(device, bindings, rayGenDescriptorSetLayout);
 	
 }
 
@@ -431,6 +477,7 @@ void GraphicsEngine::record_draw_command(VkCommandBuffer commandBuffer, uint32_t
 	
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineInfo.pipeline);
 
+	
 	
 	vkCmdBindDescriptorSets(
 		commandBuffer,

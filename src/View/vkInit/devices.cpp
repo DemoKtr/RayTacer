@@ -200,32 +200,43 @@ void vkInit::create_logical_device(VkPhysicalDevice& physicalDevice, VkDevice& d
     deviceFeatures.geometryShader = VK_TRUE;
     deviceFeatures.sampleRateShading = VK_TRUE;
 
-    VkPhysicalDeviceMeshShaderFeaturesEXT meshShaderFeatures = {};
-    meshShaderFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT;
-    meshShaderFeatures.meshShader = VK_TRUE;
-    meshShaderFeatures.taskShader = VK_TRUE;
-    // meshShaderFeatures.pNext = nullptr; // domyœlnie
+    VkPhysicalDeviceAccelerationStructureFeaturesKHR asFeatures{};
+    asFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
+    asFeatures.accelerationStructure = VK_TRUE;
 
-    VkPhysicalDeviceMaintenance4FeaturesKHR maintenance4Features = {};
-    maintenance4Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_FEATURES_KHR;
-    maintenance4Features.maintenance4 = VK_TRUE;
-    maintenance4Features.pNext = &meshShaderFeatures;
+    VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingFeatures{};
+    rayTracingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
+    rayTracingFeatures.rayTracingPipeline = VK_TRUE;
+    rayTracingFeatures.pNext = &asFeatures;
 
-    VkPhysicalDeviceBufferDeviceAddressFeaturesEXT bufferDeviceAddressFeatures = {};
+    VkPhysicalDeviceBufferDeviceAddressFeatures bufferDeviceAddressFeatures{};
     bufferDeviceAddressFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES;
     bufferDeviceAddressFeatures.bufferDeviceAddress = VK_TRUE;
-    bufferDeviceAddressFeatures.pNext = &maintenance4Features;
+    bufferDeviceAddressFeatures.pNext = &rayTracingFeatures;
 
-    VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeatures = {};
+    VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeatures{};
     dynamicRenderingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR;
     dynamicRenderingFeatures.dynamicRendering = VK_TRUE;
     dynamicRenderingFeatures.pNext = &bufferDeviceAddressFeatures;
 
-    VkPhysicalDeviceFeatures2 deviceFeatures2 = {};
+    VkPhysicalDeviceMeshShaderFeaturesEXT meshShaderFeatures{};
+    meshShaderFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT;
+    meshShaderFeatures.meshShader = VK_TRUE;
+    meshShaderFeatures.taskShader = VK_TRUE;
+    meshShaderFeatures.pNext = &dynamicRenderingFeatures;
+
+    VkPhysicalDeviceMaintenance4FeaturesKHR maintenance4Features{};
+    maintenance4Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_FEATURES_KHR;
+    maintenance4Features.maintenance4 = VK_TRUE;
+    maintenance4Features.pNext = &meshShaderFeatures;
+
+    VkPhysicalDeviceFeatures2 deviceFeatures2{};
     deviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-    deviceFeatures2.pNext = &dynamicRenderingFeatures;
+    deviceFeatures2.pNext = &maintenance4Features;
     deviceFeatures2.features = deviceFeatures;
 
+
+   
     // Warstwy walidacyjne
     std::vector<const char*> enabledLayers;
     if (debugMode) {
@@ -250,7 +261,7 @@ void vkInit::create_logical_device(VkPhysicalDevice& physicalDevice, VkDevice& d
     VkResult result = vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &device);
     if (result != VK_SUCCESS) {
         if (debugMode) {
-            std::cout << "Device creation FAILED!!!" << std::endl;
+            std::cout << "Device creation FAILED!!!" << result << std::endl;
         }
         return ;
     }
@@ -258,7 +269,7 @@ void vkInit::create_logical_device(VkPhysicalDevice& physicalDevice, VkDevice& d
         std::cout << "Device is successfully created" << std::endl;
     }
     
-    return ;
+   
 }
 void vkInit::get_Queues(VkPhysicalDevice& physicalDevice, VkDevice& device, VkQueue queues[4], VkSurfaceKHR& surface, bool debugMode)
 {

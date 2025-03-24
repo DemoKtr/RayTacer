@@ -16,6 +16,6 @@ struct BufferInputChunk {
 	VkPhysicalDevice physicalDevice;
 	VkMemoryPropertyFlags memoryProperties;
 	VkMemoryAllocateFlags memoryAllocatet;
-	Buffer& buffer;
+	
 };
 

@@ -46,13 +46,13 @@ void vkInit::make_transfer_command_pool(VkPhysicalDevice physicalDevice, VkDevic
 	
 }
 
-void vkInit::make_command_buffer(commandBufferInputChunk inputChunk, bool debugMode) {
+void vkInit::make_command_buffer(commandBufferInputChunk inputChunk, VkCommandBuffer& commandBuffer,bool debugMode) {
 	VkCommandBufferAllocateInfo allocInfo = {};
 	allocInfo.commandPool = inputChunk.commandPool;
 	allocInfo.level = VkCommandBufferLevel::VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	allocInfo.commandBufferCount = 1;
 	allocInfo.sType = VkStructureType::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	VkResult result = vkAllocateCommandBuffers(inputChunk.device, &allocInfo, &inputChunk.commandBuffer);
+	VkResult result = vkAllocateCommandBuffers(inputChunk.device, &allocInfo, &commandBuffer);
 	if (result != VK_SUCCESS) {
 		std::cout << "FAILED!!! Allocated main command buffer for frame, error code: " << result << std::endl;
 		
@@ -109,4 +109,35 @@ void vkInit::make_postprocess_frame_command_buffers(commandBufferInputChunk inpu
 	allocInfo.commandPool = inputChunk.commandPool;
 	allocInfo.level = VkCommandBufferLevel::VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	allocInfo.commandBufferCount = 1;
+}
+
+void vkInit::flushCommandBuffer(VkDevice device, VkCommandBuffer commandBuffer, VkQueue queue, VkCommandPool pool, bool free) {
+	if (commandBuffer == VK_NULL_HANDLE)
+	{
+		return;
+	}
+
+	vkEndCommandBuffer(commandBuffer);
+
+	VkSubmitInfo submitInfo = {};
+	submitInfo.sType = VkStructureType::VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &commandBuffer;
+	submitInfo.pNext = nullptr;
+	// Create fence to ensure that the command buffer has finished executing
+	VkFenceCreateInfo fenceInfo;
+	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	fenceInfo.pNext = nullptr;
+	fenceInfo.flags = VkFenceCreateFlags() | VkFenceCreateFlagBits::VK_FENCE_CREATE_SIGNALED_BIT;
+	VkFence fence;
+	vkCreateFence(device, &fenceInfo, nullptr, &fence);
+	// Submit to the queue
+	vkQueueSubmit(queue, 1, &submitInfo, fence);
+	// Wait for the fence to signal that command buffer has finished executing
+	vkWaitForFences(device, 1, &fence, VK_TRUE, UINT64_MAX);
+	vkDestroyFence(device, fence, nullptr);
+	if (free)
+	{
+		vkFreeCommandBuffers(device, pool, 1, &commandBuffer);
+	}
 }

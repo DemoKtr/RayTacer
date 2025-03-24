@@ -1,4 +1,5 @@
 #include "View/vkUtil/memory.h"
+#include <vector>
 
 uint32_t vkUtil::findMemoryTypeIndex(VkPhysicalDevice physicalDevice, uint32_t supportedMemoryIndices, VkMemoryPropertyFlags requestedProperties) {
 	/*
@@ -30,46 +31,38 @@ typedef struct VkPhysicalDeviceMemoryProperties {
 }
 
 void vkUtil::allocateBufferMemory(Buffer& buffer, const BufferInputChunk& input) {
-	/*
-// Provided by VK_VERSION_1_0
-typedef struct VkMemoryRequirements {
-	VkDeviceSize    size;
-	VkDeviceSize    alignment;
-	uint32_t        memoryTypeBits;
-} VkMemoryRequirements;
-*/
 	VkMemoryRequirements memoryRequirements;
 	vkGetBufferMemoryRequirements(input.logicalDevice, buffer.buffer, &memoryRequirements);
 
-	/*
-	* // Provided by VK_VERSION_1_0
-	typedef struct VkMemoryAllocateInfo {
-		VkStructureType    sType;
-		const void*        pNext;
-		VkDeviceSize       allocationSize;
-		uint32_t           memoryTypeIndex;
-	} VkMemoryAllocateInfo;
-	*/
-	VkMemoryAllocateInfo allocInfo;
+	VkMemoryAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	allocInfo.allocationSize = memoryRequirements.size;
 	allocInfo.memoryTypeIndex = findMemoryTypeIndex(
-		input.physicalDevice, memoryRequirements.memoryTypeBits,
-		input.memoryProperties
+		input.physicalDevice, memoryRequirements.memoryTypeBits, input.memoryProperties
 	);
-	if (!(input.memoryAllocatet == VkMemoryAllocateFlags())) {
-		VkMemoryAllocateFlagsInfo memoryAllocateFlagsInfo;
-		memoryAllocateFlagsInfo.flags = input.memoryAllocatet;
 
-		// Jeœli u¿ywasz `bufferDeviceAddress`, dodaj odpowiedni¹ flagê
+	// Sprawdzenie, czy trzeba dodaæ VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT
+	VkMemoryAllocateFlagsInfo memoryAllocateFlagsInfo{};
+
+		memoryAllocateFlagsInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO;
+		memoryAllocateFlagsInfo.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
 		allocInfo.pNext = &memoryAllocateFlagsInfo;
+
+
+	// Alokacja pamiêci
+	if (vkAllocateMemory(input.logicalDevice, &allocInfo, nullptr, &buffer.bufferMemory) != VK_SUCCESS) {
+		throw std::runtime_error("Failed to allocate buffer memory!");
 	}
 
-	vkAllocateMemory(input.logicalDevice, &allocInfo, nullptr, &buffer.bufferMemory);
-	
-	vkBindBufferMemory(input.logicalDevice, buffer.buffer, buffer.bufferMemory, 0);
+	// Przypisanie pamiêci do bufora
+	if (vkBindBufferMemory(input.logicalDevice, buffer.buffer, buffer.bufferMemory, 0) != VK_SUCCESS) {
+		throw std::runtime_error("Failed to bind buffer memory!");
+	}
+
+	std::cout << "Memory allocated successfully for buffer: " << buffer.bufferMemory << std::endl;
 }
 
-void vkUtil::createBuffer(BufferInputChunk input)
+void vkUtil::createBuffer(BufferInputChunk input, Buffer& buffer)
 {
 	/*
 * // Provided by VK_VERSION_1_0
@@ -85,15 +78,18 @@ typedef struct VkBufferCreateInfo {
 } VkBufferCreateInfo;
 */
 	VkBufferCreateInfo bufferInfo;
+	bufferInfo.sType = VkStructureType::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 	bufferInfo.flags = VkBufferCreateFlags();
 	bufferInfo.size = input.size;
 	bufferInfo.usage = input.usage;
 	bufferInfo.sharingMode = VkSharingMode::VK_SHARING_MODE_EXCLUSIVE;
+	bufferInfo.pNext = nullptr;
+	
 
 	
-	vkCreateBuffer(input.logicalDevice, &bufferInfo, nullptr, &input.buffer.buffer);
+	vkCreateBuffer(input.logicalDevice, &bufferInfo, nullptr, &buffer.buffer);
 
-	allocateBufferMemory(input.buffer, input);
+	allocateBufferMemory(buffer, input);
 	
 }
 
@@ -128,6 +124,7 @@ void vkUtil::copyBuffer(Buffer& srcBuffer, Buffer& dstBuffer, VkDeviceSize size,
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &commandBuffer;
 
+	//vkGetDeviceQueue(device, selectedQueueFamilyIndex, 0, &graphicsQueue);
     // Wys³anie komendy kopiowania na kolejkê
     if (vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS) {
         throw std::runtime_error("failed to submit copy command buffer!");
@@ -136,3 +133,44 @@ void vkUtil::copyBuffer(Buffer& srcBuffer, Buffer& dstBuffer, VkDeviceSize size,
     // Oczekiwanie na zakoñczenie operacji
     vkQueueWaitIdle(queue);
 }
+
+uint64_t vkUtil::getBufferDeviceAddress(VkDevice device, VkBuffer buffer) {
+	
+	PFN_vkGetBufferDeviceAddressKHR vkGetBufferDeviceAddressKHR = (PFN_vkGetBufferDeviceAddressKHR)vkGetDeviceProcAddr(device, "vkGetBufferDeviceAddressKHR");
+	VkBufferDeviceAddressInfoKHR bufferDeviceAI{};
+	bufferDeviceAI.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+	bufferDeviceAI.buffer = buffer;
+	return vkGetBufferDeviceAddressKHR(device, &bufferDeviceAI);
+}
+
+uint32_t vkUtil::getMemoryType(uint32_t typeBits, VkMemoryPropertyFlags properties, VkBool32* memTypeFound, VkPhysicalDeviceMemoryProperties& memoryProperties) {
+
+	for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++)
+	{
+		if ((typeBits & 1) == 1)
+		{
+			if ((memoryProperties.memoryTypes[i].propertyFlags & properties) == properties)
+			{
+				if (memTypeFound)
+				{
+					*memTypeFound = true;
+				}
+				return i;
+			}
+		}
+		typeBits >>= 1;
+	}
+
+	if (memTypeFound)
+	{
+		*memTypeFound = false;
+		return 0;
+	}
+	else
+	{
+		throw std::runtime_error("Could not find a matching memory type");
+	}
+}
+
+
+

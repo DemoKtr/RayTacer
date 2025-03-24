@@ -9,4 +9,10 @@ glslangValidator -V PostProcess.vert -o vert.spv
 glslangValidator -V RayCast.comp -o compute.spv
 
 glslangValidator -V FinalImageFrag.frag -o frag.spv
+
+glslangValidator -V --target-env vulkan1.3 raygen.rgen -o raygen.spv
+glslangValidator -V --target-env vulkan1.3 miss.rmiss -o miss.spv
+glslangValidator -V --target-env vulkan1.3 closesthit.rchit -o closesthit.spv
+
+
 pause

@@ -34,6 +34,9 @@ void vkUtil::SwapChainFrame::make_descriptors_resources() {
 
 	vkCreateSampler(logicalDevice, &samplerInfo, nullptr, &sampler);
 
+
+
+
 }
 
 void vkUtil::SwapChainFrame::write_descriptors() {

@@ -23,10 +23,15 @@ namespace vkUtil {
 		VkSampler sampler;
 		VkDescriptorSet postProcessDescriptorSet;
 		VkDescriptorSet RayCastDescriptorSet;
+		VkDescriptorSet RayGenDescriptorSet;
 
 
 		VkCommandBuffer mainCommandBuffer;
 		VkCommandBuffer computeCommandBuffer;
+
+
+		
+
 		void destroy();
 		void make_descriptors_resources();
 		void write_descriptors();

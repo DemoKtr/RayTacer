@@ -5,7 +5,7 @@
 #include "config.h"
 #include <vector>
 #include "View/vkUtil/frame.h"
-
+#include "View/vkAccelerationStructures/AccelerationStructureMenagerie.h"
 
 
 
@@ -59,7 +59,13 @@ class GraphicsEngine {
 	VkDescriptorSetLayout rayCastDescriptorSetLayout;
 	VkDescriptorSetLayout finalImageDescriptorSetLayout;
 
+	VkDescriptorPool rayGenDescriptorPool;
+	VkDescriptorSetLayout rayGenDescriptorSetLayout;
+
 	std::vector<vkUtil::SwapChainFrame> swapchainFrames;
+
+
+	vkAccelerationStructure::VertexMenagerie *accelerationStructure;
 
 	void make_instance(); //instance Setup
 	void choice_device();

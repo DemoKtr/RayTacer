@@ -28,7 +28,12 @@ namespace vkUtil {
 		\param input holds various parameters
 		\returns the created buffer
 	*/
-	void createBuffer(BufferInputChunk input);
+	void createBuffer(BufferInputChunk input, Buffer& buffer);
 
 	void copyBuffer(Buffer& srcBuffer, Buffer& dstBuffer, VkDeviceSize size, VkQueue queue, VkCommandBuffer commandBuffer);
+
+	uint64_t getBufferDeviceAddress(VkDevice device,VkBuffer buffer);
+
+	uint32_t getMemoryType(uint32_t typeBits, VkMemoryPropertyFlags properties, VkBool32* memTypeFound, VkPhysicalDeviceMemoryProperties& memoryProperties);
+
 }
