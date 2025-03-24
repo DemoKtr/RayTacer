@@ -37,7 +37,7 @@ void vkInit::RayTracingPipelineBuilder::create_shader_groups(VkPipeline pipeline
 		(PFN_vkGetRayTracingShaderGroupHandlesKHR)vkGetDeviceProcAddr(device, "vkGetRayTracingShaderGroupHandlesKHR");
 	vkGetRayTracingShaderGroupHandlesKHR(device, pipeline, 0, shaderGroups.size(), sbtSize, shaderHandleStorage.data());
 
-	const VkBufferUsageFlags bufferUsageFlags = VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+	const VkBufferUsageFlags bufferUsageFlags = VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 	const VkMemoryPropertyFlags memoryUsageFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
 	BufferInputChunk inputChunk;
@@ -58,7 +58,7 @@ void vkInit::RayTracingPipelineBuilder::create_shader_groups(VkPipeline pipeline
 	memcpy(memoryLocation, shaderHandleStorage.data(), inputChunk.size);
 	vkUnmapMemory(device, stagingBuffer.bufferMemory);
 
-	inputChunk.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
+	inputChunk.usage = bufferUsageFlags;
 	inputChunk.memoryProperties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
 	vkUtil::createBuffer(inputChunk, raygenShaderBindingTable);
@@ -75,6 +75,7 @@ void vkInit::RayTracingPipelineBuilder::create_shader_groups(VkPipeline pipeline
 
 	/////////////////////////////////////////////////////////////////
 	inputChunk.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+	inputChunk.memoryProperties = memoryUsageFlags;
 	vkUtil::createBuffer(inputChunk, stagingBuffer);
 
 	inputChunk.memoryAllocatet = VkMemoryAllocateFlagBits::VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
@@ -84,7 +85,7 @@ void vkInit::RayTracingPipelineBuilder::create_shader_groups(VkPipeline pipeline
 	memcpy(memoryLocation, shaderHandleStorage.data() + handleSizeAligned, inputChunk.size);
 	vkUnmapMemory(device, stagingBuffer.bufferMemory);
 
-	inputChunk.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
+	inputChunk.usage = inputChunk.usage = bufferUsageFlags;
 	inputChunk.memoryProperties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
 	vkUtil::createBuffer(inputChunk, missShaderBindingTable);
@@ -101,6 +102,7 @@ void vkInit::RayTracingPipelineBuilder::create_shader_groups(VkPipeline pipeline
 
 	/////////////////////////////////////////////////////////////////////
 	inputChunk.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+	inputChunk.memoryProperties = memoryUsageFlags;
 	vkUtil::createBuffer(inputChunk, stagingBuffer);
 
 	inputChunk.memoryAllocatet = VkMemoryAllocateFlagBits::VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
@@ -110,7 +112,7 @@ void vkInit::RayTracingPipelineBuilder::create_shader_groups(VkPipeline pipeline
 	memcpy(memoryLocation, shaderHandleStorage.data() + handleSizeAligned * 2, inputChunk.size);
 	vkUnmapMemory(device, stagingBuffer.bufferMemory);
 
-	inputChunk.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
+	inputChunk.usage = inputChunk.usage = bufferUsageFlags;
 	inputChunk.memoryProperties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
 	vkUtil::createBuffer(inputChunk, hitShaderBindingTable);
@@ -306,8 +308,9 @@ vkUtil::GraphicsPipelineOutBundle vkInit::RayTracingPipelineBuilder::build(VkQue
 	vkCreateRayTracingPipelinesKHR(device, VK_NULL_HANDLE, VK_NULL_HANDLE, 1, &rayTracingPipelineCI, nullptr, &pipeline);
 	output.pipeline = pipeline;
 	output.layout = pipelineLayout;
-	return output;
+	
 	create_shader_groups(pipeline, queue, commandBuffer,raygenShaderBindingTable, missShaderBindingTable, hitShaderBindingTable);
+	return output;
 }
 
 void vkInit::RayTracingPipelineBuilder::add_descriptor_set_layout(VkDescriptorSetLayout descriptorSetLayout) {

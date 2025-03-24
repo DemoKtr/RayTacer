@@ -87,7 +87,7 @@ typedef struct VkBufferCreateInfo {
 	
 
 	
-	vkCreateBuffer(input.logicalDevice, &bufferInfo, nullptr, &buffer.buffer);
+ 	vkCreateBuffer(input.logicalDevice, &bufferInfo, nullptr, &buffer.buffer);
 
 	allocateBufferMemory(buffer, input);
 	

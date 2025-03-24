@@ -12,6 +12,9 @@
 #include <View/vkInit/synchronizer.h>
 #include <View/vkInit/commands.h>
 #include <View/vkResources/resources.h>
+#include <glm/glm.hpp>
+#include <glm/ext/matrix_transform.hpp>
+#include <glm/ext/matrix_clip_space.hpp>
 
 
 
@@ -33,10 +36,11 @@ GraphicsEngine::GraphicsEngine(GLFWwindow* window, int width, int height, bool d
 	vkResources::scenePipelines = new vkUtil::PipelineCache(device);
 	create_swapchain();
 	create_descriptor_set_layouts();
+	create_frame_command_buffer();
 	create_pipeline();
 
+	
 	finalize_setup();
-
 
 	make_assets();
 
@@ -296,7 +300,7 @@ void GraphicsEngine::create_pipeline() {
 	rayBuilder.specify_ray_gen_shader("resources/shaders/raygen.spv");
 	rayBuilder.specify_miss_shader("resources/shaders/miss.spv");
 	rayBuilder.specify_closest_hit_shader("resources/shaders/closesthit.spv");
-	rayBuilder.build(graphicsQueue,maincommandBuffer, raygenShaderBindingTable, missShaderBindingTable, hitShaderBindingTable);
+	output = rayBuilder.build(graphicsQueue,maincommandBuffer, raygenShaderBindingTable, missShaderBindingTable, hitShaderBindingTable);
 	pipeline.pipelineLayout = output.layout;
 	pipeline.pipeline = output.pipeline;
 	
@@ -305,7 +309,7 @@ void GraphicsEngine::create_pipeline() {
 
 void GraphicsEngine::finalize_setup() {
 	create_frame_resources();
-	create_frame_command_buffer();
+	
 }
 
 void GraphicsEngine::make_assets() {
@@ -708,5 +712,17 @@ void GraphicsEngine::record_raytracing_command(VkCommandBuffer commandBuffer, ui
 
 void GraphicsEngine::prepare_frame(uint32_t imageIndex) {
 	vkUtil::SwapChainFrame& _frame = swapchainFrames[imageIndex];
+
+	glm::vec3 eye = { 0.0f, 0.0f, -10.0f };
+	glm::vec3 center = { 0.0f, 0.0f, 0.0f };
+	glm::vec3 up = { 0.0f, 1.0f, 0.0f };
+	glm::mat4 view = glm::lookAt(eye, center, up);
+
+	glm::mat4 projection = glm::perspective(glm::radians(45.0f), static_cast<float>(swapchainExtent.width) / static_cast<float>(swapchainExtent.height), 0.1f, 1024.0f);
+	//projection[1][1] *= -1;
+
+	_frame.uboData.inverseProj = glm::inverse(projection);
+	_frame.uboData.inverseView = glm::inverse(view);
+	memcpy(_frame.uboDataWriteLocation, &(_frame.uboData), sizeof(vkUtil::UBO));
 	_frame.write_descriptors(accelerationStructure->topLevelAS.handle, bufferSize);
 }
