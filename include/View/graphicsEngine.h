@@ -67,6 +67,11 @@ class GraphicsEngine {
 
 	vkAccelerationStructure::VertexMenagerie *accelerationStructure;
 
+	Buffer hitShaderBindingTable;
+	Buffer missShaderBindingTable;
+	Buffer raygenShaderBindingTable;
+
+
 	void make_instance(); //instance Setup
 	void choice_device();
 	void create_swapchain();
@@ -79,10 +84,11 @@ class GraphicsEngine {
 	void create_frame_resources();
 	void create_descriptor_set_layouts();
 	
-
+	uint32_t bufferSize;
 
 	void record_draw_command(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 	void record_compute_command(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+	void record_raytracing_command(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 	
 
 	void prepare_scene();

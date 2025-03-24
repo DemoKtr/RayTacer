@@ -1,4 +1,5 @@
 #include "View/vkUtil/frame.h"
+#include <View/vkUtil/memory.h>
 
 void vkUtil::SwapChainFrame::destroy() {
 	vkDestroyImageView(logicalDevice, mainImageView, nullptr);
@@ -34,12 +35,23 @@ void vkUtil::SwapChainFrame::make_descriptors_resources() {
 
 	vkCreateSampler(logicalDevice, &samplerInfo, nullptr, &sampler);
 
+	BufferInputChunk input;
+	input.logicalDevice = logicalDevice;
+	input.memoryProperties = VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+	input.physicalDevice = physicalDevice;
+	input.size = sizeof(UBO);
+	input.usage = VkBufferUsageFlagBits::VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+	vkUtil::createBuffer(input,ubo);
+	vkMapMemory(logicalDevice, ubo.bufferMemory, 0, sizeof(UBO), 0, &uboDataWriteLocation);
 
+	uboDescritorBufferInfo.buffer = ubo.buffer;
+	uboDescritorBufferInfo.offset = 0;
+	uboDescritorBufferInfo.range = sizeof(UBO);
 
 
 }
 
-void vkUtil::SwapChainFrame::write_descriptors() {
+void vkUtil::SwapChainFrame::write_descriptors(VkAccelerationStructureKHR handle, uint32_t size) {
 
 
 	VkDescriptorImageInfo imageDescriptor2;
@@ -49,8 +61,8 @@ void vkUtil::SwapChainFrame::write_descriptors() {
 
 	VkWriteDescriptorSet writeInfo2;
 	writeInfo2.sType = VkStructureType::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	writeInfo2.dstSet = RayCastDescriptorSet;
-	writeInfo2.dstBinding = 0;
+	writeInfo2.dstSet = RayGenDescriptorSet;
+	writeInfo2.dstBinding = 1;
 	writeInfo2.dstArrayElement = 0;
 	writeInfo2.descriptorType = VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 	writeInfo2.descriptorCount = 1;
@@ -58,6 +70,36 @@ void vkUtil::SwapChainFrame::write_descriptors() {
 	writeInfo2.pNext = nullptr;
 	vkUpdateDescriptorSets(logicalDevice, 1, &writeInfo2, 0, nullptr);
 
+
+	
+	VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureInfo{};
+	accelerationStructureInfo.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR;
+	accelerationStructureInfo.accelerationStructureCount = 1;
+	accelerationStructureInfo.pAccelerationStructures = &handle; // Twój bufor AS
+
+	
+	VkWriteDescriptorSet writeInfo3;
+	writeInfo3.sType = VkStructureType::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	writeInfo3.dstSet = RayGenDescriptorSet;
+	writeInfo3.dstBinding = 0;
+	writeInfo3.dstArrayElement = 0;
+	writeInfo3.descriptorType = VkDescriptorType::VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+	writeInfo3.descriptorCount = 1;
+	writeInfo3.pNext = &accelerationStructureInfo;
+
+	vkUpdateDescriptorSets(logicalDevice, 1, &writeInfo3, 0, nullptr);
+
+	VkWriteDescriptorSet writeInfo4;
+	writeInfo4.sType = VkStructureType::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	writeInfo4.dstSet = RayGenDescriptorSet;
+	writeInfo4.dstBinding = 2;
+	writeInfo4.dstArrayElement = 0;
+	writeInfo4.descriptorType = VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	writeInfo4.descriptorCount = 1;
+	writeInfo4.pBufferInfo = &uboDescritorBufferInfo;
+	writeInfo4.pNext = nullptr;
+
+	vkUpdateDescriptorSets(logicalDevice, 1, &writeInfo4, 0, nullptr);
 
 	VkDescriptorImageInfo imageDescriptor;
 
@@ -76,4 +118,8 @@ void vkUtil::SwapChainFrame::write_descriptors() {
 	writeInfo.pNext = nullptr;
 	
 	vkUpdateDescriptorSets(logicalDevice, 1, &writeInfo, 0,  nullptr);
+
+
+
+
 }

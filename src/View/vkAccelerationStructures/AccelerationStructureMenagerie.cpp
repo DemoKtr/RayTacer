@@ -38,7 +38,7 @@ void vkAccelerationStructure::VertexMenagerie::consume(uint64_t meshType, std::v
 
 }
 
-void vkAccelerationStructure::VertexMenagerie::finalize(vkAccelerationStructure::FinalizationChunk finalizationChunk, VkCommandPool commandPool) {
+void vkAccelerationStructure::VertexMenagerie::finalize(vkAccelerationStructure::FinalizationChunk finalizationChunk, VkCommandPool commandPool, uint32_t& re) {
 
 	logicalDevice = finalizationChunk.logicalDevice;
 
@@ -55,6 +55,7 @@ void vkAccelerationStructure::VertexMenagerie::finalize(vkAccelerationStructure:
 	inputChunk.logicalDevice = finalizationChunk.logicalDevice;
 	inputChunk.physicalDevice = finalizationChunk.physicalDevice;
 	inputChunk.size = sizeof(float) * vertexLump.size();
+	re = sizeof(float) * vertexLump.size();
 	inputChunk.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 		
 	inputChunk.memoryProperties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;

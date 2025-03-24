@@ -37,6 +37,14 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(imgui)
 
+
+FetchContent_Declare(
+  glm
+  GIT_REPOSITORY https://github.com/g-truc/glm.git
+  GIT_TAG master
+)
+FetchContent_MakeAvailable(glm)
+
 include_directories(
         ${PROJECT_SOURCE_DIR}/include
         #${PROJECT_SOURCE_DIR}/src
@@ -64,6 +72,7 @@ add_executable(RayTracer ${all_SRCS}
 target_link_libraries(${PROJECT_NAME}
    Vulkan::Vulkan
   glfw
+  glm
   
 )
 

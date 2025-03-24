@@ -27,7 +27,7 @@ namespace vkAccelerationStructure {
 		std::vector<float> vertexLump;
 		std::vector<uint32_t> indexLump;
 
-		void finalize(FinalizationChunk finalizationChunk, VkCommandPool commandPool);
+		void finalize(FinalizationChunk finalizationChunk, VkCommandPool commandPool,uint32_t& re);
 		void create_top_acceleration_structure(VkPhysicalDevice physicalDevice,VkCommandBuffer commandBuffer, VkQueue queue, VkCommandPool commandPool);
 		Buffer vertexBuffer, indexBuffer, transformBuffer;
 		std::unordered_map<uint64_t, int> firstIndices;

@@ -90,7 +90,7 @@ void GraphicsEngine::render() {
 
 
 		record_draw_command(MainCommandBuffer,imageIndex);
-		record_compute_command(computeCommandBuffer,imageIndex);
+		record_raytracing_command(computeCommandBuffer,imageIndex);
 
 
 
@@ -296,10 +296,10 @@ void GraphicsEngine::create_pipeline() {
 	rayBuilder.specify_ray_gen_shader("resources/shaders/raygen.spv");
 	rayBuilder.specify_miss_shader("resources/shaders/miss.spv");
 	rayBuilder.specify_closest_hit_shader("resources/shaders/closesthit.spv");
-	rayBuilder.build();
+	rayBuilder.build(graphicsQueue,maincommandBuffer, raygenShaderBindingTable, missShaderBindingTable, hitShaderBindingTable);
 	pipeline.pipelineLayout = output.layout;
 	pipeline.pipeline = output.pipeline;
-
+	
 	vkResources::scenePipelines->addPipeline("Ray", pipeline);
 }
 
@@ -315,7 +315,7 @@ void GraphicsEngine::make_assets() {
 	input.physicalDevice = physicalDevice;
 	input.queue = graphicsQueue;
 	input.commandBuffer = maincommandBuffer;
-	accelerationStructure->finalize(input, CommandPool);
+	accelerationStructure->finalize(input, CommandPool, bufferSize);
 }
 
 
@@ -604,7 +604,109 @@ void GraphicsEngine::record_compute_command(VkCommandBuffer commandBuffer , uint
 
 }
 
+void GraphicsEngine::record_raytracing_command(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
+
+	// Przygotowanie beginInfo dla command buffera
+
+
+
+	VkCommandBufferBeginInfo beginInfo = {};
+	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	beginInfo.pNext = nullptr;
+	beginInfo.flags = 0; // lub odpowiednie flagi, jeœli potrzebujesz
+	beginInfo.pInheritanceInfo = nullptr; // dla command bufferów g³ównych
+
+	VkResult result = vkBeginCommandBuffer(commandBuffer, &beginInfo);
+	if (result != VK_SUCCESS) {
+		if (debugMode) {
+			std::cout << "Failed to begin recording compute command buffer! Error code: " << result << std::endl;
+		}
+		// Mo¿esz tutaj zakoñczyæ funkcjê lub podj¹æ inne dzia³anie
+	}
+
+	VkImageMemoryBarrier barrier = { };
+	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	barrier.newLayout = VK_IMAGE_LAYOUT_GENERAL; // lub inny oczekiwany layout
+	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.image = swapchainFrames[imageIndex].postProcessImage; // Twoja zmienna obrazu
+	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	barrier.subresourceRange.baseMipLevel = 0;
+	barrier.subresourceRange.levelCount = 1;
+	barrier.subresourceRange.baseArrayLayer = 0;
+	barrier.subresourceRange.layerCount = 1;
+	barrier.srcAccessMask = 0; // poniewa¿ UNDEFINED nie wymaga synchronizacji
+	barrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT; // zale¿y od dalszego u¿ycia
+
+	vkCmdPipelineBarrier(
+		commandBuffer,
+		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+		VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, // lub inny odpowiedni etap
+		0, 0, NULL, 0, NULL, 1, &barrier
+	);
+	vkUtil::PipelineCacheChunk pipelineInfo = vkResources::scenePipelines->getPipeline("Ray");
+
+	VkPhysicalDeviceRayTracingPipelinePropertiesKHR rtProps{};
+	rtProps.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR;
+	VkPhysicalDeviceProperties2 deviceProps2{};
+	deviceProps2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+	deviceProps2.pNext = &rtProps;
+	vkGetPhysicalDeviceProperties2(physicalDevice, &deviceProps2);
+
+	// Dispatch zadania obliczeniowego
+	const uint32_t handleSizeAligned = vkInit::alignedSize(rtProps.shaderGroupHandleSize,
+		rtProps.shaderGroupHandleAlignment);
+
+	
+		
+
+	VkStridedDeviceAddressRegionKHR raygenShaderSbtEntry{};
+	raygenShaderSbtEntry.deviceAddress = vkUtil::getBufferDeviceAddress(device,raygenShaderBindingTable.buffer);
+	raygenShaderSbtEntry.stride = handleSizeAligned;
+	raygenShaderSbtEntry.size = handleSizeAligned;
+
+	VkStridedDeviceAddressRegionKHR missShaderSbtEntry{};
+	missShaderSbtEntry.deviceAddress = vkUtil::getBufferDeviceAddress(device, missShaderBindingTable.buffer);
+	missShaderSbtEntry.stride = handleSizeAligned;
+	missShaderSbtEntry.size = handleSizeAligned;
+
+	VkStridedDeviceAddressRegionKHR hitShaderSbtEntry{};
+	hitShaderSbtEntry.deviceAddress = vkUtil::getBufferDeviceAddress(device, hitShaderBindingTable.buffer);
+	hitShaderSbtEntry.stride = handleSizeAligned;
+	hitShaderSbtEntry.size = handleSizeAligned;
+
+	VkStridedDeviceAddressRegionKHR callableShaderSbtEntry{};
+	
+	/*
+		Dispatch the ray tracing commands
+	*/
+	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipelineInfo.pipeline);
+	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipelineInfo.pipelineLayout, 0, 1,
+		&swapchainFrames[imageIndex].RayGenDescriptorSet, 0, 0);
+	PFN_vkCmdTraceRaysKHR vkCmdTraceRaysKHR =
+		(PFN_vkCmdTraceRaysKHR)vkGetDeviceProcAddr(device, "vkCmdTraceRaysKHR");
+	vkCmdTraceRaysKHR(
+		commandBuffer,
+		&raygenShaderSbtEntry,
+		&missShaderSbtEntry,
+		&hitShaderSbtEntry,
+		&callableShaderSbtEntry,
+		1920,
+		1080,
+		1);
+
+	/*
+		Copy ray tracing output to swap chain image
+	*/
+
+
+	vkEndCommandBuffer(commandBuffer);
+		// Obs³u¿ b³¹d w razie potrzeby
+}
+
+
 void GraphicsEngine::prepare_frame(uint32_t imageIndex) {
 	vkUtil::SwapChainFrame& _frame = swapchainFrames[imageIndex];
-	_frame.write_descriptors();
+	_frame.write_descriptors(accelerationStructure->topLevelAS.handle, bufferSize);
 }

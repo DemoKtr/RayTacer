@@ -6,6 +6,9 @@
 
 namespace vkInit {
 	
+
+	uint32_t alignedSize(uint32_t value, uint32_t alignment);
+
 	class RayTracingPipelineBuilder {
 	
 	
@@ -23,12 +26,11 @@ namespace vkInit {
 		VkPipelineShaderStageCreateInfo make_shader_info(
 			const VkShaderModule& shaderModule, const VkShaderStageFlagBits& stage);
 		
-		void create_shader_groups();
+		void create_shader_groups(VkPipeline pipeline, VkQueue queue, VkCommandBuffer commandBuffer, Buffer& raygenShaderBindingTable, Buffer& missShaderBindingTable, Buffer& hitShaderBindingTable);
+		
 		
 	public:
-		Buffer raygenShaderBindingTable;
-		Buffer missShaderBindingTable;
-		Buffer hitShaderBindingTable;
+
 		RayTracingPipelineBuilder(VkPhysicalDevice physicalDevice,VkDevice device);
 		~RayTracingPipelineBuilder();
 		VkPipelineLayout make_pipeline_layout(VkPipelineLayout& pipelineLayout);
@@ -36,7 +38,7 @@ namespace vkInit {
 		void specify_miss_shader(const char* filename);
 		void specify_closest_hit_shader(const char* filename);
 		void specify_all_hit_shader(const char* filename);
-		vkUtil::GraphicsPipelineOutBundle build();
+		vkUtil::GraphicsPipelineOutBundle build(VkQueue queue, VkCommandBuffer commandBuffer, Buffer& raygenShaderBindingTable, Buffer& missShaderBindingTable, Buffer& hitShaderBindingTable);
 		void add_descriptor_set_layout(VkDescriptorSetLayout descriptorSetLayout);
 		
 
