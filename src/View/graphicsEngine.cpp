@@ -84,60 +84,38 @@ void GraphicsEngine::render() {
 		prepare_frame(frameNumber);
 
 		VkCommandBuffer MainCommandBuffer = swapchainFrames[frameNumber].mainCommandBuffer;
-		VkCommandBuffer computeCommandBuffer = swapchainFrames[frameNumber].computeCommandBuffer;
+		//VkCommandBuffer computeCommandBuffer = swapchainFrames[frameNumber].computeCommandBuffer;
 
 	
 		vkResetCommandBuffer(MainCommandBuffer, VkCommandBufferResetFlagBits::VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
-		vkResetCommandBuffer(computeCommandBuffer, VkCommandBufferResetFlagBits::VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+		//vkResetCommandBuffer(computeCommandBuffer, VkCommandBufferResetFlagBits::VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
 
 
 
 
 		record_draw_command(MainCommandBuffer,imageIndex);
-		record_raytracing_command(computeCommandBuffer,imageIndex);
+		//record_raytracing_command(computeCommandBuffer,imageIndex);
 
 
 
+		VkSubmitInfo submitInfo = { };
 
-		VkPipelineStageFlags computeWaitStage = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
-		VkSubmitInfo computeSubmitInfo = { };
-		computeSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		computeSubmitInfo.commandBufferCount = 1;
-		computeSubmitInfo.pCommandBuffers = &computeCommandBuffer;
-
-		// Compute czeka na obraz, który zosta³ zg³oszony przez vkAcquireNextImageKHR:
-		computeSubmitInfo.waitSemaphoreCount = 1;
-		computeSubmitInfo.pWaitSemaphores = &swapchainFrames[frameNumber].imageAvailable;
-		computeSubmitInfo.pWaitDstStageMask = &computeWaitStage;
-
-		// Po wykonaniu compute, sygnalizujemy, ¿e obliczenia siê skoñczy³y:
-		computeSubmitInfo.signalSemaphoreCount = 1;
-		computeSubmitInfo.pSignalSemaphores = &swapchainFrames[frameNumber].computeFinished;
-
-		 result = vkQueueSubmit(computeQueue, 1, &computeSubmitInfo, VK_NULL_HANDLE);
-		if (result != VK_SUCCESS) {
-			if (debugMode) {
-				std::cout << "Failed to submit compute command buffer! Error code: " << result << std::endl;
-			}
-		}
-
-
-		//taskmanager.waitForPriorityTasks(TaskPriority::DESCRIPTORS);
-		VkPipelineStageFlags graphicsWaitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		VkSubmitInfo graphicsSubmitInfo = { };
-		graphicsSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		graphicsSubmitInfo.waitSemaphoreCount = 1;
+		VkSemaphore waitSemaphores[] = { swapchainFrames[frameNumber].imageAvailable };
+		VkPipelineStageFlags  waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.waitSemaphoreCount = 1;
 		// Graphics czeka na zakoñczenie compute:
-		graphicsSubmitInfo.pWaitSemaphores = &swapchainFrames[frameNumber].computeFinished;
-		graphicsSubmitInfo.pWaitDstStageMask = &graphicsWaitStage;
-		graphicsSubmitInfo.commandBufferCount = 1;
-		graphicsSubmitInfo.pCommandBuffers = &MainCommandBuffer;
+		submitInfo.pWaitSemaphores = waitSemaphores;
+		submitInfo.pWaitDstStageMask = waitStages;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &MainCommandBuffer;
 
-		// Po wykonaniu renderingu sygnalizujemy, ¿e render finished:
-		graphicsSubmitInfo.signalSemaphoreCount = 1;
-		graphicsSubmitInfo.pSignalSemaphores = &swapchainFrames[frameNumber].renderFinished;
+		
+		VkSemaphore signalSemaphores[] = { swapchainFrames[frameNumber].renderFinished };
+		submitInfo.signalSemaphoreCount = 1;
+		submitInfo.pSignalSemaphores = signalSemaphores;
 
-		result = vkQueueSubmit(graphicsQueue, 1, &graphicsSubmitInfo, swapchainFrames[frameNumber].inFlight);
+		result = vkQueueSubmit(graphicsQueue, 1, &submitInfo, swapchainFrames[frameNumber].inFlight);
 		if (result != VK_SUCCESS) {
 			std::cout << "Synchronization failed" << std::endl;
 		}
@@ -424,7 +402,85 @@ void GraphicsEngine::record_draw_command(VkCommandBuffer commandBuffer, uint32_t
 	beginInfo.pInheritanceInfo = NULL;
 
 	vkBeginCommandBuffer(commandBuffer, &beginInfo);
-	VkImageMemoryBarrier barrier = {  };
+
+
+	VkImageMemoryBarrier barrier = { };
+	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	barrier.newLayout = VK_IMAGE_LAYOUT_GENERAL; // lub inny oczekiwany layout
+	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.image = swapchainFrames[imageIndex].postProcessImage; // Twoja zmienna obrazu
+	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	barrier.subresourceRange.baseMipLevel = 0;
+	barrier.subresourceRange.levelCount = 1;
+	barrier.subresourceRange.baseArrayLayer = 0;
+	barrier.subresourceRange.layerCount = 1;
+	barrier.srcAccessMask = 0; // poniewa¿ UNDEFINED nie wymaga synchronizacji
+	barrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT; // zale¿y od dalszego u¿ycia
+
+	vkCmdPipelineBarrier(
+		commandBuffer,
+		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+		VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, // lub inny odpowiedni etap
+		0, 0, NULL, 0, NULL, 1, &barrier
+	);
+	vkUtil::PipelineCacheChunk pipelineInfo = vkResources::scenePipelines->getPipeline("Ray");
+
+	VkPhysicalDeviceRayTracingPipelinePropertiesKHR rtProps{};
+	rtProps.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR;
+	VkPhysicalDeviceProperties2 deviceProps2{};
+	deviceProps2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+	deviceProps2.pNext = &rtProps;
+	vkGetPhysicalDeviceProperties2(physicalDevice, &deviceProps2);
+
+	// Dispatch zadania obliczeniowego
+	const uint32_t handleSizeAligned = vkInit::alignedSize(rtProps.shaderGroupHandleSize,
+		rtProps.shaderGroupHandleAlignment);
+
+
+
+
+	VkStridedDeviceAddressRegionKHR raygenShaderSbtEntry{};
+	raygenShaderSbtEntry.deviceAddress = vkUtil::getBufferDeviceAddress(device, raygenShaderBindingTable.buffer);
+	raygenShaderSbtEntry.stride = handleSizeAligned;
+	raygenShaderSbtEntry.size = handleSizeAligned;
+
+	VkStridedDeviceAddressRegionKHR missShaderSbtEntry{};
+	missShaderSbtEntry.deviceAddress = vkUtil::getBufferDeviceAddress(device, missShaderBindingTable.buffer);
+	missShaderSbtEntry.stride = handleSizeAligned;
+	missShaderSbtEntry.size = handleSizeAligned;
+
+	VkStridedDeviceAddressRegionKHR hitShaderSbtEntry{};
+	hitShaderSbtEntry.deviceAddress = vkUtil::getBufferDeviceAddress(device, hitShaderBindingTable.buffer);
+	hitShaderSbtEntry.stride = handleSizeAligned;
+	hitShaderSbtEntry.size = handleSizeAligned;
+
+	VkStridedDeviceAddressRegionKHR callableShaderSbtEntry{};
+
+	/*
+		Dispatch the ray tracing commands
+	*/
+	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipelineInfo.pipeline);
+	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipelineInfo.pipelineLayout, 0, 1,
+		&swapchainFrames[imageIndex].RayGenDescriptorSet, 0, 0);
+	PFN_vkCmdTraceRaysKHR vkCmdTraceRaysKHR =
+		(PFN_vkCmdTraceRaysKHR)vkGetDeviceProcAddr(device, "vkCmdTraceRaysKHR");
+	vkCmdTraceRaysKHR(
+		commandBuffer,
+		&raygenShaderSbtEntry,
+		&missShaderSbtEntry,
+		&hitShaderSbtEntry,
+		&callableShaderSbtEntry,
+		swapchainExtent.width,
+		swapchainExtent.height,
+		1);
+
+	/*
+		Copy ray tracing output to swap chain image
+	*/
+
+	barrier = {  };
 	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
 	barrier.oldLayout = VK_IMAGE_LAYOUT_GENERAL; // aktualny layout
 	barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL; // oczekiwany layout
@@ -452,7 +508,7 @@ void GraphicsEngine::record_draw_command(VkCommandBuffer commandBuffer, uint32_t
 
 	// Ustal kolor czyszczenia jako czarny (0, 0, 0, 1)
 	VkClearColorValue clearColor = { { 0.0f, 0.0f, 0.0f, 1.0f } };
-	vkUtil::PipelineCacheChunk pipelineInfo = vkResources::scenePipelines->getPipeline("Finall Image");
+	pipelineInfo = vkResources::scenePipelines->getPipeline("Finall Image");
 	VkRenderingAttachmentInfoKHR colorAttachment = {};
 	colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
 	colorAttachment.pNext = nullptr;
