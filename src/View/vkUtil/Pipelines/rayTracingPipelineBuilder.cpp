@@ -19,126 +19,104 @@ void vkInit::RayTracingPipelineBuilder::create_shader_groups(VkPipeline pipeline
 	
 	VkPhysicalDeviceRayTracingPipelinePropertiesKHR rtProps{};
 	rtProps.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR;
+
 	VkPhysicalDeviceProperties2 deviceProps2{};
 	deviceProps2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
 	deviceProps2.pNext = &rtProps;
 	vkGetPhysicalDeviceProperties2(physicalDevice, &deviceProps2);
 
+	// Obliczamy wyrównanie uchwytów
 	uint32_t handleSize = rtProps.shaderGroupHandleSize;
 	uint32_t handleAlignment = rtProps.shaderGroupBaseAlignment;
 	uint32_t handleStride = (handleSize + handleAlignment - 1) & ~(handleAlignment - 1);
-	uint32_t sbtSize = handleStride * shaderGroups.size();
-	
-	uint32_t handleSizeAligned = alignedSize(rtProps.shaderGroupHandleSize,
-		rtProps.shaderGroupHandleAlignment);
+	uint32_t sbtSize = handleStride * static_cast<uint32_t>(shaderGroups.size());
+
+	// Rezerwujemy pamiêæ na uchwyty shaderów
 	std::vector<uint8_t> shaderHandleStorage(sbtSize);
 
-	PFN_vkGetRayTracingShaderGroupHandlesKHR vkGetRayTracingShaderGroupHandlesKHR =
+	// Pobieramy wskaŸnik do funkcji ray tracingu
+	PFN_vkGetRayTracingShaderGroupHandlesKHR pfnGetRTShaderGroupHandles =
 		(PFN_vkGetRayTracingShaderGroupHandlesKHR)vkGetDeviceProcAddr(device, "vkGetRayTracingShaderGroupHandlesKHR");
-	vkGetRayTracingShaderGroupHandlesKHR(device, pipeline, 0, shaderGroups.size(), sbtSize, shaderHandleStorage.data());
+	if (!pfnGetRTShaderGroupHandles) {
+		throw std::runtime_error("Nie uda³o siê pobraæ wskaŸnika vkGetRayTracingShaderGroupHandlesKHR");
+	}
+	VkResult result = pfnGetRTShaderGroupHandles(device, pipeline, 0, static_cast<uint32_t>(shaderGroups.size()), sbtSize, shaderHandleStorage.data());
+	if (result != VK_SUCCESS) std::cout << "kurwa" << std::endl;
+	const VkBufferUsageFlags bufferUsageFlags = VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR |
+		VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
+		VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+	const VkMemoryPropertyFlags hostMemoryFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
-	const VkBufferUsageFlags bufferUsageFlags = VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-	const VkMemoryPropertyFlags memoryUsageFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-
-	BufferInputChunk inputChunk;
+	// Przygotowujemy strukturê wejœciow¹ do tworzenia buforów
+	BufferInputChunk inputChunk = {};
 	inputChunk.logicalDevice = device;
 	inputChunk.physicalDevice = physicalDevice;
 	inputChunk.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-	inputChunk.memoryProperties = memoryUsageFlags;
+	inputChunk.memoryProperties = hostMemoryFlags;
+	// Kopiujemy tylko "u¿yteczn¹" czêœæ uchwytu
 	inputChunk.size = handleSize;
 
 	Buffer stagingBuffer;
+	void* memoryLocation = nullptr;
 
+	// ----- Raygen SBT -----
+	// Tworzymy staging buffer
 	vkUtil::createBuffer(inputChunk, stagingBuffer);
 
-	inputChunk.memoryAllocatet = VkMemoryAllocateFlagBits::VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
-	//fill it with vertex data
-	void* memoryLocation = nullptr;
+	// Mapujemy staging buffer i kopiujemy dane uchwytu raygen (offset 0)
 	vkMapMemory(device, stagingBuffer.bufferMemory, 0, inputChunk.size, 0, &memoryLocation);
 	memcpy(memoryLocation, shaderHandleStorage.data(), inputChunk.size);
 	vkUnmapMemory(device, stagingBuffer.bufferMemory);
 
+	// Tworzymy docelowy bufor raygen z pamiêci¹ DEVICE_LOCAL
 	inputChunk.usage = bufferUsageFlags;
 	inputChunk.memoryProperties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-
 	vkUtil::createBuffer(inputChunk, raygenShaderBindingTable);
 
-	//copy to it
-	vkUtil::copyBuffer(
-		stagingBuffer, raygenShaderBindingTable, inputChunk.size,
-		queue, commandBuffer
-	);
+	// Kopiujemy dane ze staging buffer do bufora docelowego
+	vkUtil::copyBuffer(stagingBuffer, raygenShaderBindingTable, inputChunk.size, queue, commandBuffer);
 
-	// Cleanup
+	// Czyszczenie staging buffer
 	vkDestroyBuffer(device, stagingBuffer.buffer, nullptr);
 	vkFreeMemory(device, stagingBuffer.bufferMemory, nullptr);
 
-	/////////////////////////////////////////////////////////////////
+	// ----- Miss SBT -----
+	// Dla miss shader – offset o jeden uchwyt (handleStride)
 	inputChunk.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-	inputChunk.memoryProperties = memoryUsageFlags;
+	inputChunk.memoryProperties = hostMemoryFlags;
 	vkUtil::createBuffer(inputChunk, stagingBuffer);
 
-	inputChunk.memoryAllocatet = VkMemoryAllocateFlagBits::VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
-	//fill it with vertex data
-	memoryLocation = nullptr;
 	vkMapMemory(device, stagingBuffer.bufferMemory, 0, inputChunk.size, 0, &memoryLocation);
-	memcpy(memoryLocation, shaderHandleStorage.data() + handleSizeAligned, inputChunk.size);
+	memcpy(memoryLocation, shaderHandleStorage.data() + handleStride, inputChunk.size);
 	vkUnmapMemory(device, stagingBuffer.bufferMemory);
 
-	inputChunk.usage = inputChunk.usage = bufferUsageFlags;
+	inputChunk.usage = bufferUsageFlags;
 	inputChunk.memoryProperties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-
 	vkUtil::createBuffer(inputChunk, missShaderBindingTable);
 
-	//copy to it
-	vkUtil::copyBuffer(
-		stagingBuffer, missShaderBindingTable, inputChunk.size,
-		queue, commandBuffer
-	);
+	vkUtil::copyBuffer(stagingBuffer, missShaderBindingTable, inputChunk.size, queue, commandBuffer);
 
-	// Cleanup
 	vkDestroyBuffer(device, stagingBuffer.buffer, nullptr);
 	vkFreeMemory(device, stagingBuffer.bufferMemory, nullptr);
 
-	/////////////////////////////////////////////////////////////////////
+	// ----- Hit SBT -----
+	// Dla hit shader – offset o dwa uchwyty (handleStride * 2)
 	inputChunk.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-	inputChunk.memoryProperties = memoryUsageFlags;
+	inputChunk.memoryProperties = hostMemoryFlags;
 	vkUtil::createBuffer(inputChunk, stagingBuffer);
 
-	inputChunk.memoryAllocatet = VkMemoryAllocateFlagBits::VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
-	//fill it with vertex data
-	memoryLocation = nullptr;
 	vkMapMemory(device, stagingBuffer.bufferMemory, 0, inputChunk.size, 0, &memoryLocation);
-	memcpy(memoryLocation, shaderHandleStorage.data() + handleSizeAligned * 2, inputChunk.size);
+	memcpy(memoryLocation, shaderHandleStorage.data() + handleStride * 2, inputChunk.size);
 	vkUnmapMemory(device, stagingBuffer.bufferMemory);
 
-	inputChunk.usage = inputChunk.usage = bufferUsageFlags;
+	inputChunk.usage = bufferUsageFlags;
 	inputChunk.memoryProperties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-
 	vkUtil::createBuffer(inputChunk, hitShaderBindingTable);
 
-	//copy to it
-	vkUtil::copyBuffer(
-		stagingBuffer, hitShaderBindingTable, inputChunk.size,
-		queue, commandBuffer
-	);
+	vkUtil::copyBuffer(stagingBuffer, hitShaderBindingTable, inputChunk.size, queue, commandBuffer);
 
-	// Cleanup
 	vkDestroyBuffer(device, stagingBuffer.buffer, nullptr);
 	vkFreeMemory(device, stagingBuffer.bufferMemory, nullptr);
-
-
-	//vulkanDevice->createBuffer(bufferUsageFlags, memoryUsageFlags, &raygenShaderBindingTable, handleSize);
-	//vulkanDevice->createBuffer(bufferUsageFlags, memoryUsageFlags, &missShaderBindingTable, handleSize);
-	//vulkanDevice->createBuffer(bufferUsageFlags, memoryUsageFlags, &hitShaderBindingTable, handleSize);
-
-	// Copy handles
-	//raygenShaderBindingTable.map();
-	//missShaderBindingTable.map();
-	//hitShaderBindingTable.map();
-	//memcpy(raygenShaderBindingTable.mapped, shaderHandleStorage.data(), handleSize);
-	//memcpy(missShaderBindingTable.mapped, shaderHandleStorage.data() + handleSizeAligned, handleSize);
-	//memcpy(hitShaderBindingTable.mapped, shaderHandleStorage.data() + handleSizeAligned * 2, handleSize);}
 
 }
 

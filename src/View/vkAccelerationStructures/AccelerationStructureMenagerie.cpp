@@ -159,7 +159,7 @@ void vkAccelerationStructure::VertexMenagerie::finalize(vkAccelerationStructure:
 	accelerationStructureGeometry.geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
 	accelerationStructureGeometry.geometry.triangles.vertexData = vertexBufferDeviceAddress;
 	accelerationStructureGeometry.geometry.triangles.maxVertex = 2;
-	accelerationStructureGeometry.geometry.triangles.vertexStride = sizeof(float)* vertexLump.size();
+	accelerationStructureGeometry.geometry.triangles.vertexStride = sizeof(float)* 3;
 	accelerationStructureGeometry.geometry.triangles.indexType = VK_INDEX_TYPE_UINT32;
 	accelerationStructureGeometry.geometry.triangles.indexData = indexBufferDeviceAddress;
 	accelerationStructureGeometry.geometry.triangles.transformData.deviceAddress = 0;
