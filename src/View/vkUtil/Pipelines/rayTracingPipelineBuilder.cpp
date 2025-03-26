@@ -26,10 +26,10 @@ void vkInit::RayTracingPipelineBuilder::create_shader_groups(VkPipeline pipeline
 	vkGetPhysicalDeviceProperties2(physicalDevice, &deviceProps2);
 
 	// Obliczamy wyrównanie uchwytów
-	uint32_t handleSize = rtProps.shaderGroupHandleSize;
-	uint32_t handleAlignment = rtProps.shaderGroupBaseAlignment;
-	uint32_t handleStride = (handleSize + handleAlignment - 1) & ~(handleAlignment - 1);
-	uint32_t sbtSize = handleStride * static_cast<uint32_t>(shaderGroups.size());
+	const uint32_t handleSize = rtProps.shaderGroupHandleSize;
+	const uint32_t handleSizeAligned = alignedSize(rtProps.shaderGroupHandleSize, rtProps.shaderGroupHandleAlignment);
+	const uint32_t groupCount = static_cast<uint32_t>(shaderGroups.size());
+	const uint32_t sbtSize = groupCount * handleSizeAligned;
 
 	// Rezerwujemy pamiêæ na uchwyty shaderów
 	std::vector<uint8_t> shaderHandleStorage(sbtSize);
@@ -57,15 +57,15 @@ void vkInit::RayTracingPipelineBuilder::create_shader_groups(VkPipeline pipeline
 	inputChunk.size = handleSize;
 
 	Buffer stagingBuffer;
-	void* memoryLocation = nullptr;
+	
 
 	// ----- Raygen SBT -----
 	// Tworzymy staging buffer
 	vkUtil::createBuffer(inputChunk, stagingBuffer);
 
 	// Mapujemy staging buffer i kopiujemy dane uchwytu raygen (offset 0)
-	vkMapMemory(device, stagingBuffer.bufferMemory, 0, inputChunk.size, 0, &memoryLocation);
-	memcpy(memoryLocation, shaderHandleStorage.data(), inputChunk.size);
+	vkMapMemory(device, stagingBuffer.bufferMemory, 0, inputChunk.size, 0, &gemMemoryLocation);
+	memcpy(gemMemoryLocation, shaderHandleStorage.data(), inputChunk.size);
 	vkUnmapMemory(device, stagingBuffer.bufferMemory);
 
 	// Tworzymy docelowy bufor raygen z pamiêci¹ DEVICE_LOCAL
@@ -86,8 +86,8 @@ void vkInit::RayTracingPipelineBuilder::create_shader_groups(VkPipeline pipeline
 	inputChunk.memoryProperties = hostMemoryFlags;
 	vkUtil::createBuffer(inputChunk, stagingBuffer);
 
-	vkMapMemory(device, stagingBuffer.bufferMemory, 0, inputChunk.size, 0, &memoryLocation);
-	memcpy(memoryLocation, shaderHandleStorage.data() + handleStride, inputChunk.size);
+	vkMapMemory(device, stagingBuffer.bufferMemory, 0, inputChunk.size, 0, &missMemoryLocation);
+	memcpy(missMemoryLocation, shaderHandleStorage.data() + handleSizeAligned, inputChunk.size);
 	vkUnmapMemory(device, stagingBuffer.bufferMemory);
 
 	inputChunk.usage = bufferUsageFlags;
@@ -105,8 +105,8 @@ void vkInit::RayTracingPipelineBuilder::create_shader_groups(VkPipeline pipeline
 	inputChunk.memoryProperties = hostMemoryFlags;
 	vkUtil::createBuffer(inputChunk, stagingBuffer);
 
-	vkMapMemory(device, stagingBuffer.bufferMemory, 0, inputChunk.size, 0, &memoryLocation);
-	memcpy(memoryLocation, shaderHandleStorage.data() + handleStride * 2, inputChunk.size);
+	vkMapMemory(device, stagingBuffer.bufferMemory, 0, inputChunk.size, 0, &hitMemoryLocation);
+	memcpy(hitMemoryLocation, shaderHandleStorage.data() + handleSizeAligned * 2, inputChunk.size);
 	vkUnmapMemory(device, stagingBuffer.bufferMemory);
 
 	inputChunk.usage = bufferUsageFlags;
@@ -279,15 +279,18 @@ vkUtil::GraphicsPipelineOutBundle vkInit::RayTracingPipelineBuilder::build(VkQue
 	rayTracingPipelineCI.maxPipelineRayRecursionDepth = 1;
 	rayTracingPipelineCI.layout = pipelineLayout;
 	VkPipeline pipeline;
-
+	std::cout << static_cast<uint32_t>(shaderGroups.size()) << std::endl;;
+	std::cout << static_cast<uint32_t>(shaderGroups.size()) << std::endl;;
+	std::cout << static_cast<uint32_t>(shaderGroups.size()) << std::endl;;
 	PFN_vkCreateRayTracingPipelinesKHR vkCreateRayTracingPipelinesKHR;
 	vkCreateRayTracingPipelinesKHR = (PFN_vkCreateRayTracingPipelinesKHR)(vkGetDeviceProcAddr(device, "vkCreateRayTracingPipelinesKHR"));
 
 	vkCreateRayTracingPipelinesKHR(device, VK_NULL_HANDLE, VK_NULL_HANDLE, 1, &rayTracingPipelineCI, nullptr, &pipeline);
+	create_shader_groups(pipeline, queue, commandBuffer, raygenShaderBindingTable, missShaderBindingTable, hitShaderBindingTable);
 	output.pipeline = pipeline;
 	output.layout = pipelineLayout;
 	
-	create_shader_groups(pipeline, queue, commandBuffer,raygenShaderBindingTable, missShaderBindingTable, hitShaderBindingTable);
+	
 	return output;
 }
 

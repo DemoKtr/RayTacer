@@ -457,6 +457,7 @@ void GraphicsEngine::record_draw_command(VkCommandBuffer commandBuffer, uint32_t
 	hitShaderSbtEntry.size = handleSizeAligned;
 
 	VkStridedDeviceAddressRegionKHR callableShaderSbtEntry{};
+	
 
 	/*
 		Dispatch the ray tracing commands

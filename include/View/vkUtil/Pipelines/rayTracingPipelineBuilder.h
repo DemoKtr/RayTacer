@@ -30,7 +30,9 @@ namespace vkInit {
 		
 		
 	public:
-
+		void* gemMemoryLocation = nullptr;
+		void* missMemoryLocation = nullptr;
+		void* hitMemoryLocation = nullptr;
 		RayTracingPipelineBuilder(VkPhysicalDevice physicalDevice,VkDevice device);
 		~RayTracingPipelineBuilder();
 		void make_pipeline_layout(VkPipelineLayout& pipelineLayout);
