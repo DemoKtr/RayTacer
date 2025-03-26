@@ -134,7 +134,7 @@ vkInit::RayTracingPipelineBuilder::~RayTracingPipelineBuilder()
 {
 }
 
-VkPipelineLayout vkInit::RayTracingPipelineBuilder::make_pipeline_layout(VkPipelineLayout& pipelineLayout) {
+void vkInit::RayTracingPipelineBuilder::make_pipeline_layout(VkPipelineLayout& pipelineLayout) {
 	/*
 	typedef struct VkPipelineLayoutCreateInfo {
 		VkStructureType                 sType;
@@ -166,7 +166,7 @@ VkPipelineLayout vkInit::RayTracingPipelineBuilder::make_pipeline_layout(VkPipel
 
 	if (result != VK_SUCCESS) {
 		std::cerr << "Failed to create pipeline layout! Error code: " << result << std::endl;
-		return VK_NULL_HANDLE;
+		return ;
 	}
 }
 
@@ -204,7 +204,7 @@ void vkInit::RayTracingPipelineBuilder::specify_miss_shader(const char* filename
 	vkUtil::createModule(filename, device, missShader);
 	missShaderInfo = make_shader_info(missShader, VkShaderStageFlagBits::VK_SHADER_STAGE_MISS_BIT_KHR);
 
-	shaderStages.push_back(rayGenShaderInfo);
+	shaderStages.push_back(missShaderInfo);
 
 	VkRayTracingShaderGroupCreateInfoKHR shaderGroup{};
 	shaderGroup.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR;
@@ -223,10 +223,10 @@ void vkInit::RayTracingPipelineBuilder::specify_closest_hit_shader(const char* f
 	}
 
 	std::cout << "Create ClosestHit shader module" << std::endl;
-	vkUtil::createModule(filename, device, missShader);
-	missShaderInfo = make_shader_info(missShader, VkShaderStageFlagBits::VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
+	vkUtil::createModule(filename, device, closestHitShader);
+	closestHitShaderInfo = make_shader_info(closestHitShader, VkShaderStageFlagBits::VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
 
-	shaderStages.push_back(missShaderInfo);
+	shaderStages.push_back(closestHitShaderInfo);
 
 	VkRayTracingShaderGroupCreateInfoKHR shaderGroup{};
 	shaderGroup.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR;

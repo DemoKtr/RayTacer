@@ -33,7 +33,7 @@ namespace vkInit {
 
 		RayTracingPipelineBuilder(VkPhysicalDevice physicalDevice,VkDevice device);
 		~RayTracingPipelineBuilder();
-		VkPipelineLayout make_pipeline_layout(VkPipelineLayout& pipelineLayout);
+		void make_pipeline_layout(VkPipelineLayout& pipelineLayout);
 		void specify_ray_gen_shader(const char* filename);
 		void specify_miss_shader(const char* filename);
 		void specify_closest_hit_shader(const char* filename);
