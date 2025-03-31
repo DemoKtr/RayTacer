@@ -349,9 +349,8 @@ void GraphicsEngine::create_frame_resources() {
 	bindings.types[0] = VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 	vkInit::make_descriptor_pool(device, rayCastDescriptorPool, static_cast<uint32_t>(swapchainFrames.size()), bindings);
 
-	bindings.count = 4;
+	bindings.count = 3;
 	bindings.types[0] = VkDescriptorType::VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
-	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
 	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
 	vkInit::make_descriptor_pool(device, rayGenDescriptorPool, static_cast<uint32_t>(swapchainFrames.size()), bindings);
@@ -790,8 +789,16 @@ void GraphicsEngine::prepare_frame(uint32_t imageIndex) {
 	glm::vec3 center = { 0.0f, 0.0f, 0.0f };
 	glm::vec3 up = { 0.0f, 1.0f, 0.0f };
 	glm::mat4 view = glm::lookAt(eye, center, up);
+	
+	float left = -100.0f;
+	float right = 100.0f;
+	float bottom = -100.0f;
+	float top = 100.0f;
+	float nearVal = 0.1f;
+	float farVal = 1024.0f;
 
 	glm::mat4 projection = glm::perspective(glm::radians(45.0f), static_cast<float>(swapchainExtent.width) / static_cast<float>(swapchainExtent.height), 0.1f, 1024.0f);
+	//glm::mat4 projection = glm::ortho(left, right, bottom, top, nearVal, farVal);
 	//projection[1][1] *= -1;
 
 	_frame.uboData.inverseProj = glm::inverse(projection);
