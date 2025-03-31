@@ -156,7 +156,7 @@ void vkAccelerationStructure::VertexMenagerie::finalize(vkAccelerationStructure:
 	accelerationStructureGeometry.flags = VK_GEOMETRY_OPAQUE_BIT_KHR;
 	accelerationStructureGeometry.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_KHR;
 	accelerationStructureGeometry.geometry.triangles.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
-	accelerationStructureGeometry.geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
+	accelerationStructureGeometry.geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT; 
 	accelerationStructureGeometry.geometry.triangles.vertexData = vertexBufferDeviceAddress;
 	accelerationStructureGeometry.geometry.triangles.maxVertex = 2;
 	accelerationStructureGeometry.geometry.triangles.vertexStride = sizeof(float)* 3;
@@ -180,7 +180,7 @@ void vkAccelerationStructure::VertexMenagerie::finalize(vkAccelerationStructure:
 	PFN_vkCreateAccelerationStructureKHR vkCreateAccelerationStructureKHR;
 	vkCreateAccelerationStructureKHR = (PFN_vkCreateAccelerationStructureKHR)(vkGetDeviceProcAddr(logicalDevice, "vkCreateAccelerationStructureKHR"));
 
-	const uint32_t numTriangles = 1;
+	const uint32_t numTriangles = 0;
 	VkAccelerationStructureBuildSizesInfoKHR accelerationStructureBuildSizesInfo{};
 	accelerationStructureBuildSizesInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
 	vkGetAccelerationStructureBuildSizesKHR(
