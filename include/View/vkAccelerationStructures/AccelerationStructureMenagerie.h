@@ -2,9 +2,17 @@
 #include "config.h"
 #include <vector>
 #include <unordered_map>
+
+#include "glm/fwd.hpp"
 #include "View/vkAccelerationStructures/AccelerationStructure.h"
 
 namespace vkAccelerationStructure {
+	enum class PrefabType {
+		PLANE, 
+		CUBE, 
+		SPHERE
+	};
+	
 	struct  FinalizationChunk {
 		VkDevice logicalDevice;
 		VkPhysicalDevice physicalDevice;
@@ -24,8 +32,13 @@ namespace vkAccelerationStructure {
 		VertexMenagerie();
 		~VertexMenagerie();
 		void consume(uint64_t meshType, std::vector<float> data, std::vector<uint32_t> indices);
+		void consume(PrefabType prefabType);
+		void transform(glm::vec3 vector);
+		
+		VkTransformMatrixKHR transformMatrix;
 		std::vector<float> vertexLump;
 		std::vector<uint32_t> indexLump;
+		uint32_t numTriangles = 3;
 
 		void finalize(FinalizationChunk finalizationChunk, VkCommandPool commandPool,uint32_t& re);
 		void create_top_acceleration_structure(VkPhysicalDevice physicalDevice,VkCommandBuffer commandBuffer, VkQueue queue, VkCommandPool commandPool);

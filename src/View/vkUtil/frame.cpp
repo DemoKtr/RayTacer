@@ -1,6 +1,8 @@
 #include "View/vkUtil/frame.h"
 #include <View/vkUtil/memory.h>
 
+#include "View/vkAccelerationStructures/AccelerationStructureMenagerie.h"
+
 void vkUtil::SwapChainFrame::destroy() {
 	vkDestroyImageView(logicalDevice, mainImageView, nullptr);
 
@@ -51,7 +53,7 @@ void vkUtil::SwapChainFrame::make_descriptors_resources() {
 
 }
 
-void vkUtil::SwapChainFrame::write_descriptors(VkAccelerationStructureKHR handle, uint32_t size) {
+void vkUtil::SwapChainFrame::write_descriptors(std::vector<vkAccelerationStructure::VertexMenagerie *> structures, uint32_t size) { // WARINGING possible cyclic include
 
 
 	VkDescriptorImageInfo imageDescriptor2;
@@ -70,21 +72,30 @@ void vkUtil::SwapChainFrame::write_descriptors(VkAccelerationStructureKHR handle
 	writeInfo2.pNext = nullptr;
 	vkUpdateDescriptorSets(logicalDevice, 1, &writeInfo2, 0, nullptr);
 
+	std::vector<VkAccelerationStructureKHR> accelerationStructures;
+	accelerationStructures.reserve(structures.size());
 
+	for (auto *structure : structures) {
+		if (structure) {
+			accelerationStructures.push_back(structure->topLevelAS.handle); // Assuming a getter
+		}
+	}
+
+	// Step 2: Get a pointer to the data
+	const VkAccelerationStructureKHR *pAccelerationStructures = accelerationStructures.data();
 	
 	VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureInfo{};
 	accelerationStructureInfo.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR;
-	accelerationStructureInfo.accelerationStructureCount = 1;
-	accelerationStructureInfo.pAccelerationStructures = &handle; // Twój bufor AS
+	accelerationStructureInfo.accelerationStructureCount = static_cast<uint32_t>(structures.size());
+	accelerationStructureInfo.pAccelerationStructures = pAccelerationStructures; // Pointer to your AS array
 
-	
-	VkWriteDescriptorSet writeInfo3;
-	writeInfo3.sType = VkStructureType::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	VkWriteDescriptorSet writeInfo3{};
+	writeInfo3.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	writeInfo3.dstSet = RayGenDescriptorSet;
 	writeInfo3.dstBinding = 0;
 	writeInfo3.dstArrayElement = 0;
-	writeInfo3.descriptorType = VkDescriptorType::VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
-	writeInfo3.descriptorCount = 1;
+	writeInfo3.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+	writeInfo3.descriptorCount = 2; // Set the descriptor count
 	writeInfo3.pNext = &accelerationStructureInfo;
 
 	vkUpdateDescriptorSets(logicalDevice, 1, &writeInfo3, 0, nullptr);

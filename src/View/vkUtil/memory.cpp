@@ -41,7 +41,7 @@ void vkUtil::allocateBufferMemory(Buffer& buffer, const BufferInputChunk& input)
 		input.physicalDevice, memoryRequirements.memoryTypeBits, input.memoryProperties
 	);
 
-	// Sprawdzenie, czy trzeba dodaæ VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT
+	// Sprawdzenie, czy trzeba dodaÄ‡ VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT
 	VkMemoryAllocateFlagsInfo memoryAllocateFlagsInfo{};
 
 		memoryAllocateFlagsInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO;
@@ -49,12 +49,12 @@ void vkUtil::allocateBufferMemory(Buffer& buffer, const BufferInputChunk& input)
 		allocInfo.pNext = &memoryAllocateFlagsInfo;
 
 
-	// Alokacja pamiêci
+	// Alokacja pamiÄ™ci
 	if (vkAllocateMemory(input.logicalDevice, &allocInfo, nullptr, &buffer.bufferMemory) != VK_SUCCESS) {
 		throw std::runtime_error("Failed to allocate buffer memory!");
 	}
 
-	// Przypisanie pamiêci do bufora
+	// Przypisanie pamiÄ™ci do bufora
 	if (vkBindBufferMemory(input.logicalDevice, buffer.buffer, buffer.bufferMemory, 0) != VK_SUCCESS) {
 		throw std::runtime_error("Failed to bind buffer memory!");
 	}
@@ -94,13 +94,13 @@ typedef struct VkBufferCreateInfo {
 }
 
 void vkUtil::copyBuffer(Buffer& srcBuffer, Buffer& dstBuffer, VkDeviceSize size, VkQueue queue, VkCommandBuffer commandBuffer) {
-    // Resetowanie bufora poleceñ przed u¿yciem
+    // Resetowanie bufora poleceÅ„ przed uÅ¼yciem
     vkResetCommandBuffer(commandBuffer, 0);
 
     // Struktura begin info dla command buffer
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT; // Jednorazowe u¿ycie
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT; // Jednorazowe uÅ¼ycie
 
     if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
         throw std::runtime_error("failed to begin recording command buffer!");
@@ -108,8 +108,8 @@ void vkUtil::copyBuffer(Buffer& srcBuffer, Buffer& dstBuffer, VkDeviceSize size,
 
     // Konfiguracja operacji kopiowania bufora
     VkBufferCopy copyRegion{};
-    copyRegion.srcOffset = 0; // Pocz¹tek Ÿród³a
-    copyRegion.dstOffset = 0; // Pocz¹tek celu
+    copyRegion.srcOffset = 0; // PoczÄ…tek ÅºrÃ³dÅ‚a
+    copyRegion.dstOffset = 0; // PoczÄ…tek celu
     copyRegion.size = size;   // Rozmiar kopiowania
 
     vkCmdCopyBuffer(commandBuffer, srcBuffer.buffer, dstBuffer.buffer, 1, &copyRegion);
@@ -125,12 +125,12 @@ void vkUtil::copyBuffer(Buffer& srcBuffer, Buffer& dstBuffer, VkDeviceSize size,
     submitInfo.pCommandBuffers = &commandBuffer;
 
 	//vkGetDeviceQueue(device, selectedQueueFamilyIndex, 0, &graphicsQueue);
-    // Wys³anie komendy kopiowania na kolejkê
+    // WysÅ‚anie komendy kopiowania na kolejkÄ™
     if (vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS) {
         throw std::runtime_error("failed to submit copy command buffer!");
     }
 
-    // Oczekiwanie na zakoñczenie operacji
+    // Oczekiwanie na zakoÅ„czenie operacji
     vkQueueWaitIdle(queue);
 }
 
