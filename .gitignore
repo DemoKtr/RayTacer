@@ -3,6 +3,8 @@ out
 CMakeLists.txt.user
 CMakeCache.txt
 CMakeFiles
+.idea
+cmake-build-debug
 CMakeScripts
 Testing
 Makefile

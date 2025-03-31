@@ -77,5 +77,8 @@ target_link_libraries(${PROJECT_NAME}
 )
 
 set(RESOURCE_DIR "${CMAKE_SOURCE_DIR}/resources")
-# Skopiuj folder 'resource' do folderu build w czasie konfiguracji
-file(COPY ${RESOURCE_DIR} DESTINATION ${CMAKE_BINARY_DIR})
+
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E create_symlink
+        ${RESOURCE_DIR}
+        ${CMAKE_BINARY_DIR}/resources)

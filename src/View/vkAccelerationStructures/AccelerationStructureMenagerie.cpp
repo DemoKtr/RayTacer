@@ -3,17 +3,6 @@
 #include <View/vkUtil/memory.h>
 #include <View/vkInit/commands.h>
 
-
-
-
-
-
-
-
-
-
-
-
 vkAccelerationStructure::VertexMenagerie::VertexMenagerie() {
 	 vertexLump = {
 		    1.0f,  1.0f, 0.0f ,
@@ -24,8 +13,6 @@ vkAccelerationStructure::VertexMenagerie::VertexMenagerie() {
 	// Setup indices
 	indexLump = { 0, 1, 2 };
 	//indexCount = static_cast<uint32_t>(indices.size());
-
-	
 }
 
 vkAccelerationStructure::VertexMenagerie::~VertexMenagerie() {
@@ -41,9 +28,7 @@ void vkAccelerationStructure::VertexMenagerie::consume(uint64_t meshType, std::v
 void vkAccelerationStructure::VertexMenagerie::finalize(vkAccelerationStructure::FinalizationChunk finalizationChunk, VkCommandPool commandPool, uint32_t& re) {
 
 	logicalDevice = finalizationChunk.logicalDevice;
-
-
-
+	
 	// Setup identity transform matrix
 	VkTransformMatrixKHR transformMatrix = {
 		1.0f, 0.0f, 0.0f, 0.0f,
@@ -180,7 +165,7 @@ void vkAccelerationStructure::VertexMenagerie::finalize(vkAccelerationStructure:
 	PFN_vkCreateAccelerationStructureKHR vkCreateAccelerationStructureKHR;
 	vkCreateAccelerationStructureKHR = (PFN_vkCreateAccelerationStructureKHR)(vkGetDeviceProcAddr(logicalDevice, "vkCreateAccelerationStructureKHR"));
 
-	const uint32_t numTriangles = 0;
+	const uint32_t numTriangles = 3;
 	VkAccelerationStructureBuildSizesInfoKHR accelerationStructureBuildSizesInfo{};
 	accelerationStructureBuildSizesInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
 	vkGetAccelerationStructureBuildSizesKHR(
@@ -227,7 +212,7 @@ void vkAccelerationStructure::VertexMenagerie::finalize(vkAccelerationStructure:
 
 	VkCommandBufferBeginInfo beginInfo{};
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT; // Mo¿esz zmieniæ flagi, jeœli potrzeba
+	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT; // Moï¿½esz zmieniï¿½ flagi, jeï¿½li potrzeba
 
 	VkResult result = vkBeginCommandBuffer(finalizationChunk.commandBuffer, &beginInfo);
 	if (result != VK_SUCCESS) {
@@ -250,12 +235,12 @@ void vkAccelerationStructure::VertexMenagerie::finalize(vkAccelerationStructure:
 	submitInfo.pCommandBuffers = &finalizationChunk.commandBuffer;
 
 	//vkGetDeviceQueue(device, selectedQueueFamilyIndex, 0, &graphicsQueue);
-	// Wys³anie komendy kopiowania na kolejkê
+	// Wysï¿½anie komendy kopiowania na kolejkï¿½
 	if (vkQueueSubmit(finalizationChunk.queue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS) {
 		throw std::runtime_error("failed to submit copy command buffer!");
 	}
 
-	// Oczekiwanie na zakoñczenie operacji
+	// Oczekiwanie na zakoï¿½czenie operacji
 	vkQueueWaitIdle(finalizationChunk.queue);
 
 	PFN_vkGetAccelerationStructureDeviceAddressKHR vkGetAccelerationStructureDeviceAddressKHR;
@@ -398,7 +383,7 @@ void vkAccelerationStructure::VertexMenagerie::create_top_acceleration_structure
 	vkCmdBuildAccelerationStructuresKHR = (PFN_vkCmdBuildAccelerationStructuresKHR)(vkGetDeviceProcAddr(logicalDevice, "vkCmdBuildAccelerationStructuresKHR"));
 	VkCommandBufferBeginInfo beginInfo{};
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT; // Mo¿esz zmieniæ flagi, jeœli potrzeba
+	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT; // Moï¿½esz zmieniï¿½ flagi, jeï¿½li potrzeba
 
 	VkResult result = vkBeginCommandBuffer(commandBuffer, &beginInfo);
 	if (result != VK_SUCCESS) {
@@ -419,12 +404,12 @@ void vkAccelerationStructure::VertexMenagerie::create_top_acceleration_structure
 	submitInfo.pCommandBuffers = &commandBuffer;
 
 	//vkGetDeviceQueue(device, selectedQueueFamilyIndex, 0, &graphicsQueue);
-	// Wys³anie komendy kopiowania na kolejkê
+	// Wysï¿½anie komendy kopiowania na kolejkï¿½
 	if (vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS) {
 		throw std::runtime_error("failed to submit copy command buffer!");
 	}
 
-	// Oczekiwanie na zakoñczenie operacji
+	// Oczekiwanie na zakoï¿½czenie operacji
 	vkQueueWaitIdle(queue);
 
 	VkAccelerationStructureDeviceAddressInfoKHR accelerationDeviceAddressInfo{};
