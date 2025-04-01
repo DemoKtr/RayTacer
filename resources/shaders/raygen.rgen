@@ -41,8 +41,8 @@ void main()
         // Akumulacja koloru
         finalColor += hitValue;
         
-        traceRayEXT(topLevelAS[1], gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, origin.xyz, tmin, direction.xyz, tmax, 0);
-        finalColor += hitValue;
+       // traceRayEXT(topLevelAS[1], gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, origin.xyz, tmin, direction.xyz, tmax, 0);
+        //finalColor += hitValue;
     }
 
     // Uśrednianie koloru

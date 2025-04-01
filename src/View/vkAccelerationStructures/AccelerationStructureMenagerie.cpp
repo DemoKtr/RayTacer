@@ -370,10 +370,8 @@ void vkAccelerationStructure::VertexMenagerie::finalize(vkAccelerationStructure:
     create_top_acceleration_structure(finalizationChunk.physicalDevice, finalizationChunk.commandBuffer,
                                       finalizationChunk.queue, commandPool);
 }
-
 void vkAccelerationStructure::VertexMenagerie::create_top_acceleration_structure(
     VkPhysicalDevice physicalDevice, VkCommandBuffer commandBuffer, VkQueue queue, VkCommandPool commandPool) {
-
 
     PFN_vkGetAccelerationStructureBuildSizesKHR vkGetAccelerationStructureBuildSizesKHR;
     vkGetAccelerationStructureBuildSizesKHR = (PFN_vkGetAccelerationStructureBuildSizesKHR) (vkGetDeviceProcAddr(
@@ -386,20 +384,28 @@ void vkAccelerationStructure::VertexMenagerie::create_top_acceleration_structure
     vkGetAccelerationStructureDeviceAddressKHR = (PFN_vkGetAccelerationStructureDeviceAddressKHR) (vkGetDeviceProcAddr(
         logicalDevice, "vkGetAccelerationStructureDeviceAddressKHR"));
 
-    VkAccelerationStructureInstanceKHR instance{};
-    instance.transform = transformMatrix;
-    instance.instanceCustomIndex = 0;
-    instance.mask = 0xFF;
-    instance.instanceShaderBindingTableRecordOffset = 0;
-    instance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
-    instance.accelerationStructureReference = bottomLevelAS.deviceAddress;
+    const uint32_t numInstances = 2;  // Example: 3 instances referencing different BLAS
+    VkAccelerationStructureInstanceKHR instances[numInstances] = {};
+    
+    // Populate each instance with a reference to a different BLAS
+    for (uint32_t i = 0; i < numInstances; ++i) {
+        instances[i].transform = transformMatrix;  // Assuming a shared transform matrix
+        instances[i].instanceCustomIndex = i;
+        instances[i].mask = 0xFF;
+        instances[i].instanceShaderBindingTableRecordOffset = 0;
+        instances[i].flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
+
+        // Assign the device address of the corresponding BLAS
+        instances[i].accelerationStructureReference = bottomLevelAS.deviceAddress;  // Assuming an array of BLAS
+        transform(glm::vec3(2,0,0));
+    }
 
     // Buffer for instance data
     Buffer instanceBuffer;
     BufferInputChunk inputChunk{};
     inputChunk.logicalDevice = logicalDevice;
     inputChunk.physicalDevice = physicalDevice;
-    inputChunk.size = sizeof(VkAccelerationStructureInstanceKHR);
+    inputChunk.size = sizeof(VkAccelerationStructureInstanceKHR) * numInstances;  // Size for multiple instances
     inputChunk.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
     inputChunk.memoryProperties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
@@ -408,10 +414,10 @@ void vkAccelerationStructure::VertexMenagerie::create_top_acceleration_structure
     vkUtil::createBuffer(inputChunk, stagingBuffer);
 
     inputChunk.memoryAllocatet = VkMemoryAllocateFlagBits::VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
-    //fill it with vertex data
+    // Fill it with vertex data (instance data)
     void *memoryLocation = nullptr;
     vkMapMemory(logicalDevice, stagingBuffer.bufferMemory, 0, inputChunk.size, 0, &memoryLocation);
-    memcpy(memoryLocation, &instance, inputChunk.size);
+    memcpy(memoryLocation, instances, inputChunk.size);  // Copy the instances array
     vkUnmapMemory(logicalDevice, stagingBuffer.bufferMemory);
 
     inputChunk.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT |
@@ -421,7 +427,7 @@ void vkAccelerationStructure::VertexMenagerie::create_top_acceleration_structure
 
     vkUtil::createBuffer(inputChunk, instanceBuffer);
 
-    //copy to it
+    // Copy to it
     vkUtil::copyBuffer(
         stagingBuffer, instanceBuffer, inputChunk.size,
         queue, commandBuffer
@@ -430,7 +436,6 @@ void vkAccelerationStructure::VertexMenagerie::create_top_acceleration_structure
     // Cleanup
     vkDestroyBuffer(logicalDevice, stagingBuffer.buffer, nullptr);
     vkFreeMemory(logicalDevice, stagingBuffer.bufferMemory, nullptr);
-
 
     VkDeviceOrHostAddressConstKHR instanceDataDeviceAddress{};
     instanceDataDeviceAddress.deviceAddress = vkUtil::getBufferDeviceAddress(logicalDevice, instanceBuffer.buffer);
@@ -445,9 +450,6 @@ void vkAccelerationStructure::VertexMenagerie::create_top_acceleration_structure
     accelerationStructureGeometry.geometry.instances.data = instanceDataDeviceAddress;
 
     // Get size info
-    /*
-    The pSrcAccelerationStructure, dstAccelerationStructure, and mode members of pBuildInfo are ignored. Any VkDeviceOrHostAddressKHR members of pBuildInfo are ignored by this command, except that the hostAddress member of VkAccelerationStructureGeometryTrianglesDataKHR::transformData will be examined to check if it is NULL.*
-    */
     VkAccelerationStructureBuildGeometryInfoKHR accelerationStructureBuildGeometryInfo{};
     accelerationStructureBuildGeometryInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
     accelerationStructureBuildGeometryInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
@@ -455,7 +457,7 @@ void vkAccelerationStructure::VertexMenagerie::create_top_acceleration_structure
     accelerationStructureBuildGeometryInfo.geometryCount = 1;
     accelerationStructureBuildGeometryInfo.pGeometries = &accelerationStructureGeometry;
 
-    uint32_t primitive_count = 1;
+    uint32_t primitive_count = numInstances;  // Number of instances
 
     VkAccelerationStructureBuildSizesInfoKHR accelerationStructureBuildSizesInfo{};
     accelerationStructureBuildSizesInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
@@ -491,7 +493,7 @@ void vkAccelerationStructure::VertexMenagerie::create_top_acceleration_structure
     accelerationBuildGeometryInfo.scratchData.deviceAddress = scratchBuffer.deviceAddress;
 
     VkAccelerationStructureBuildRangeInfoKHR accelerationStructureBuildRangeInfo{};
-    accelerationStructureBuildRangeInfo.primitiveCount = 1;
+    accelerationStructureBuildRangeInfo.primitiveCount = numInstances;  // Adjusted for multiple instances
     accelerationStructureBuildRangeInfo.primitiveOffset = 0;
     accelerationStructureBuildRangeInfo.firstVertex = 0;
     accelerationStructureBuildRangeInfo.transformOffset = 0;
@@ -500,13 +502,12 @@ void vkAccelerationStructure::VertexMenagerie::create_top_acceleration_structure
     };
 
     // Build the acceleration structure on the device via a one-time command buffer submission
-    // Some implementations may support acceleration structure building on the host (VkPhysicalDeviceAccelerationStructureFeaturesKHR->accelerationStructureHostCommands), but we prefer device builds
     PFN_vkCmdBuildAccelerationStructuresKHR vkCmdBuildAccelerationStructuresKHR;
     vkCmdBuildAccelerationStructuresKHR = (PFN_vkCmdBuildAccelerationStructuresKHR) (vkGetDeviceProcAddr(
         logicalDevice, "vkCmdBuildAccelerationStructuresKHR"));
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT; // Mo�esz zmieni� flagi, je�li potrzeba
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
     VkResult result = vkBeginCommandBuffer(commandBuffer, &beginInfo);
     if (result != VK_SUCCESS) {
@@ -526,13 +527,11 @@ void vkAccelerationStructure::VertexMenagerie::create_top_acceleration_structure
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &commandBuffer;
 
-    //vkGetDeviceQueue(device, selectedQueueFamilyIndex, 0, &graphicsQueue);
-    // Wys�anie komendy kopiowania na kolejk�
     if (vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS) {
         throw std::runtime_error("failed to submit copy command buffer!");
     }
 
-    // Oczekiwanie na zako�czenie operacji
+    // Oczekiwanie na zakończenie operacji
     vkQueueWaitIdle(queue);
 
     VkAccelerationStructureDeviceAddressInfoKHR accelerationDeviceAddressInfo{};
@@ -543,3 +542,4 @@ void vkAccelerationStructure::VertexMenagerie::create_top_acceleration_structure
 
     deleteScratchBuffer(logicalDevice, scratchBuffer);
 }
+

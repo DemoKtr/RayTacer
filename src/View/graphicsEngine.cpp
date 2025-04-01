@@ -299,19 +299,19 @@ void GraphicsEngine::make_assets() {
 	
 	vkAccelerationStructure::VertexMenagerie *accelerationStructure = new vkAccelerationStructure::VertexMenagerie();
 	accelerationStructure->consume(vkAccelerationStructure::PrefabType::SPHERE);
-	accelerationStructure->transform(glm::vec3(1,1,1));
+	//accelerationStructure->transform(glm::vec3(1,1,1));
 
 	accelerationStructure->finalize(input, CommandPool, bufferSize);
 	accelerationStructures.push_back(accelerationStructure);
 
-	vkAccelerationStructure::VertexMenagerie *accelerationStructure2 = new vkAccelerationStructure::VertexMenagerie();
+	/*vkAccelerationStructure::VertexMenagerie *accelerationStructure2 = new vkAccelerationStructure::VertexMenagerie();
 	
 	
 	accelerationStructure2->consume(vkAccelerationStructure::PrefabType::SPHERE);
 	//accelerationStructure2->transform(glm::vec3(1,1,1));
 
 	accelerationStructure2->finalize(input, CommandPool, bufferSize);
-	accelerationStructures.push_back(accelerationStructure2);
+	accelerationStructures.push_back(accelerationStructure2);*/
 }
 
 
