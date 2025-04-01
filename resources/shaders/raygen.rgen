@@ -1,7 +1,7 @@
 #version 460
 #extension GL_EXT_ray_tracing : enable
 
-layout(binding = 0, set = 0) uniform accelerationStructureEXT topLevelAS;
+layout(binding = 0, set = 0) uniform accelerationStructureEXT topLevelAS[];
 layout(binding = 1, set = 0, rgba32f) uniform image2D image;
 layout(binding = 2, set = 0) uniform CameraProperties 
 {
@@ -37,9 +37,11 @@ void main()
         hitValue = vec3(0.0);
         
         // Ray tracing dla próbki
-        traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, origin.xyz, tmin, direction.xyz, tmax, 0);
-        
+        traceRayEXT(topLevelAS[0], gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, origin.xyz, tmin, direction.xyz, tmax, 0);
         // Akumulacja koloru
+        finalColor += hitValue;
+        
+        traceRayEXT(topLevelAS[1], gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, origin.xyz, tmin, direction.xyz, tmax, 0);
         finalColor += hitValue;
     }
 

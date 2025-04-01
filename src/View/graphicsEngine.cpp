@@ -353,7 +353,7 @@ void GraphicsEngine::create_frame_resources() {
 	bindings.types[0] = VkDescriptorType::VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
 	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-	vkInit::make_descriptor_pool(device, rayGenDescriptorPool, static_cast<uint32_t>(swapchainFrames.size()), bindings);
+	vkInit::make_descriptor_pool(device, rayGenDescriptorPool, 100, bindings);
 	for (vkUtil::SwapChainFrame& frame : swapchainFrames) //referencja 
 	{
 		vkInit::make_semaphore(device, frame.imageAvailable,debugMode);
@@ -790,10 +790,10 @@ void GraphicsEngine::prepare_frame(uint32_t imageIndex) {
 	glm::vec3 up = { 0.0f, 1.0f, 0.0f };
 	glm::mat4 view = glm::lookAt(eye, center, up);
 	
-	float left = -100.0f;
-	float right = 100.0f;
-	float bottom = -100.0f;
-	float top = 100.0f;
+	float left = -1000.0f;
+	float right = 1000.0f;
+	float bottom = -1000.0f;
+	float top = 1000.0f;
 	float nearVal = 0.1f;
 	float farVal = 1024.0f;
 

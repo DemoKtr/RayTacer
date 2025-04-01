@@ -95,7 +95,7 @@ void vkUtil::SwapChainFrame::write_descriptors(std::vector<vkAccelerationStructu
 	writeInfo3.dstBinding = 0;
 	writeInfo3.dstArrayElement = 0;
 	writeInfo3.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
-	writeInfo3.descriptorCount = 2; // Set the descriptor count
+	writeInfo3.descriptorCount = static_cast<uint32_t>(structures.size()); // Set the descriptor count
 	writeInfo3.pNext = &accelerationStructureInfo;
 
 	vkUpdateDescriptorSets(logicalDevice, 1, &writeInfo3, 0, nullptr);
