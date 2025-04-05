@@ -145,7 +145,7 @@ void GraphicsEngine::render() {
 
 GraphicsEngine::~GraphicsEngine() {
 	delete vkResources::scenePipelines;
-	//delete accelerationStructures; //TODO what memory safty
+	delete accelerationStructure;
 	vkDestroyCommandPool(device, CommandPool, nullptr);
 	vkDestroyCommandPool(device, computeCommandPool, nullptr);
 	vkDestroyCommandPool(device, transferCommandPool, nullptr);
@@ -291,27 +291,13 @@ void GraphicsEngine::finalize_setup() {
 }
 
 void GraphicsEngine::make_assets() {
+	accelerationStructure = new vkAccelerationStructure::VertexMenagerie();
 	vkAccelerationStructure::FinalizationChunk input;
 	input.logicalDevice = device;
 	input.physicalDevice = physicalDevice;
 	input.queue = graphicsQueue;
 	input.commandBuffer = maincommandBuffer;
-	
-	vkAccelerationStructure::VertexMenagerie *accelerationStructure = new vkAccelerationStructure::VertexMenagerie();
-	accelerationStructure->consume(vkAccelerationStructure::PrefabType::SPHERE);
-	//accelerationStructure->transform(glm::vec3(1,1,1));
-
 	accelerationStructure->finalize(input, CommandPool, bufferSize);
-	accelerationStructures.push_back(accelerationStructure);
-
-	/*vkAccelerationStructure::VertexMenagerie *accelerationStructure2 = new vkAccelerationStructure::VertexMenagerie();
-	
-	
-	accelerationStructure2->consume(vkAccelerationStructure::PrefabType::SPHERE);
-	//accelerationStructure2->transform(glm::vec3(1,1,1));
-
-	accelerationStructure2->finalize(input, CommandPool, bufferSize);
-	accelerationStructures.push_back(accelerationStructure2);*/
 }
 
 
@@ -353,7 +339,7 @@ void GraphicsEngine::create_frame_resources() {
 	bindings.types[0] = VkDescriptorType::VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
 	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-	vkInit::make_descriptor_pool(device, rayGenDescriptorPool, 100, bindings);
+	vkInit::make_descriptor_pool(device, rayGenDescriptorPool, static_cast<uint32_t>(swapchainFrames.size()), bindings);
 	for (vkUtil::SwapChainFrame& frame : swapchainFrames) //referencja 
 	{
 		vkInit::make_semaphore(device, frame.imageAvailable,debugMode);
@@ -392,8 +378,7 @@ void GraphicsEngine::create_descriptor_set_layouts() {
 
 	bindings.types[0] = VkDescriptorType::VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
 	bindings.stages[0] = (VkShaderStageFlagBits::VK_SHADER_STAGE_RAYGEN_BIT_KHR);
-	bindings.counts[0] = 2;
-
+	
 
 	bindings.indices.push_back(1);
 	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
@@ -789,20 +774,12 @@ void GraphicsEngine::prepare_frame(uint32_t imageIndex) {
 	glm::vec3 center = { 0.0f, 0.0f, 0.0f };
 	glm::vec3 up = { 0.0f, 1.0f, 0.0f };
 	glm::mat4 view = glm::lookAt(eye, center, up);
-	
-	float left = -1000.0f;
-	float right = 1000.0f;
-	float bottom = -1000.0f;
-	float top = 1000.0f;
-	float nearVal = 0.1f;
-	float farVal = 1024.0f;
 
 	glm::mat4 projection = glm::perspective(glm::radians(45.0f), static_cast<float>(swapchainExtent.width) / static_cast<float>(swapchainExtent.height), 0.1f, 1024.0f);
-	//glm::mat4 projection = glm::ortho(left, right, bottom, top, nearVal, farVal);
 	//projection[1][1] *= -1;
 
 	_frame.uboData.inverseProj = glm::inverse(projection);
 	_frame.uboData.inverseView = glm::inverse(view);
 	memcpy(_frame.uboDataWriteLocation, &(_frame.uboData), sizeof(vkUtil::UBO));
-	_frame.write_descriptors(accelerationStructures, bufferSize);
+	_frame.write_descriptors(accelerationStructure->topLevelAS.handle, bufferSize);
 }

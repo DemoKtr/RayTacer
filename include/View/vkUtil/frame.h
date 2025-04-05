@@ -2,11 +2,6 @@
 #include "config.h"
 #include "descriptorsBuffers.h"
 #include "glm/glm.hpp"
-
-namespace vkAccelerationStructure {
-	class VertexMenagerie;
-}
-
 namespace vkUtil {
 
 	struct UBO {
@@ -48,7 +43,7 @@ namespace vkUtil {
 
 		void destroy();
 		void make_descriptors_resources();
-		void write_descriptors(std::vector<vkAccelerationStructure::VertexMenagerie*> structures, uint32_t size);
+		void write_descriptors(VkAccelerationStructureKHR handle, uint32_t size);
 	};
 
 }

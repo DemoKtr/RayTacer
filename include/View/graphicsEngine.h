@@ -65,7 +65,7 @@ class GraphicsEngine {
 	std::vector<vkUtil::SwapChainFrame> swapchainFrames;
 
 
-	std::vector<vkAccelerationStructure::VertexMenagerie*> accelerationStructures;
+	vkAccelerationStructure::VertexMenagerie *accelerationStructure;
 
 	Buffer hitShaderBindingTable;
 	Buffer missShaderBindingTable;
