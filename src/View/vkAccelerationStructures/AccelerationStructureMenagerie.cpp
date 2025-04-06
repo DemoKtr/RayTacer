@@ -6,12 +6,13 @@
 #include "glm/gtc/type_ptr.hpp"
 
 vkAccelerationStructure::VertexMenagerie::VertexMenagerie() {
+    
     transformMatrix = {
         1.0f, 0.0f, 0.0f, 0.0f,
         0.0f, 1.0f, 0.0f, 0.0f,
         0.0f, 0.0f, 1.0f, 0.0f
     };
-    
+    /*
     vertexLump = {
         1.0f, 1.0f, 0.0f,
         -1.0f, 1.0f, 0.0f,
@@ -21,15 +22,36 @@ vkAccelerationStructure::VertexMenagerie::VertexMenagerie() {
     // Setup indices
     indexLump = {0, 1, 2};
     //indexCount = static_cast<uint32_t>(indices.size());
+    */
 }
 
 vkAccelerationStructure::VertexMenagerie::~VertexMenagerie() {}
 
 
-void vkAccelerationStructure::VertexMenagerie::consume(uint64_t meshType, std::vector<float> data,
+void vkAccelerationStructure::VertexMenagerie::consume(PrefabType prefabType, std::vector<float> data,
                                                        std::vector<uint32_t> indices) {
+
+    int indexCount = static_cast<int>(indices.size());
+    int vertexCount = static_cast<int>(data.size() / 3);
+    VertexCount = static_cast<int>(data.size() / 3);
+    
+    int lastIndex = static_cast<int>(indexLump.size());
+
+    firstIndices.insert(std::make_pair(prefabType, lastIndex));
+    indexCounts.insert(std::make_pair(prefabType, indexCount));
+    for (float attribute : data) {
+        vertexLump.push_back(attribute);
+    }
+    for (uint32_t index : indices) {
+        indexLump.push_back(index + indexOffset);
+    }
+    numTriangles = indexLump.size()/3;
+    indexOffset += vertexCount;
+
+
 }
 
+/*
 void vkAccelerationStructure::VertexMenagerie::consume(PrefabType prefabType) {
     switch (prefabType) {
         default:
@@ -122,7 +144,7 @@ void vkAccelerationStructure::VertexMenagerie::consume(PrefabType prefabType) {
         break;
     }
 }
-
+*/
 void vkAccelerationStructure::VertexMenagerie::transform(glm::vec3 vector) {
     transformMatrix.matrix[0][3] += vector[0];
     transformMatrix.matrix[1][3] += vector[1];
@@ -133,7 +155,7 @@ void vkAccelerationStructure::VertexMenagerie::transform(glm::vec3 vector) {
 void vkAccelerationStructure::VertexMenagerie::finalize(vkAccelerationStructure::FinalizationChunk finalizationChunk,
                                                         VkCommandPool commandPool, uint32_t &re) {
     logicalDevice = finalizationChunk.logicalDevice;
-    
+
     //make a staging buffer for vertices
     BufferInputChunk inputChunk{};
     inputChunk.logicalDevice = finalizationChunk.logicalDevice;
@@ -248,7 +270,7 @@ void vkAccelerationStructure::VertexMenagerie::finalize(vkAccelerationStructure:
             VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
     accelerationStructureGeometry.geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
     accelerationStructureGeometry.geometry.triangles.vertexData = vertexBufferDeviceAddress;
-    accelerationStructureGeometry.geometry.triangles.maxVertex = 2;
+    accelerationStructureGeometry.geometry.triangles.maxVertex = VertexCount;
     accelerationStructureGeometry.geometry.triangles.vertexStride = sizeof(float) * 3;
     accelerationStructureGeometry.geometry.triangles.indexType = VK_INDEX_TYPE_UINT32;
     accelerationStructureGeometry.geometry.triangles.indexData = indexBufferDeviceAddress;

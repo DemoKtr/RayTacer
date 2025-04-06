@@ -15,7 +15,7 @@
 #include <glm/glm.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
-
+#include "View/vkMesh/obj_mesh.h"
 
 
 
@@ -291,7 +291,26 @@ void GraphicsEngine::finalize_setup() {
 }
 
 void GraphicsEngine::make_assets() {
+
+
+	std::unordered_map<vkAccelerationStructure::PrefabType, std::vector<const char*>> model_filenames = {
+		{vkAccelerationStructure::PrefabType::SPHERE, { "resources/models/box.obj", "resources/models/box.mtl" }},
+		//{vkAccelerationStructure::PrefabType::SPHERE, { "resources/models/sphere.obj", "resources/models/sphere.mtl" }},
+		//{vkAccelerationStructure::PrefabType::SPHERE, { "resources/models/sphere.obj", "resources/models/sphere.mtl" }},
+	};
+
+
+
+
 	accelerationStructure = new vkAccelerationStructure::VertexMenagerie();
+	
+	for (std::pair<vkAccelerationStructure::PrefabType, std::vector<const char*>> pair : model_filenames) {
+
+		vkMesh::ObjMesh model(pair.second[0], pair.second[1], glm::mat4(1.0f));
+		accelerationStructure->consume(pair.first, model.vertices, model.indices);
+	}
+
+	
 	vkAccelerationStructure::FinalizationChunk input;
 	input.logicalDevice = device;
 	input.physicalDevice = physicalDevice;

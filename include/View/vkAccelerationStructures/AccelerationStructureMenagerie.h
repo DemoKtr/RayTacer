@@ -31,10 +31,10 @@ namespace vkAccelerationStructure {
 	public:
 		VertexMenagerie();
 		~VertexMenagerie();
-		void consume(uint64_t meshType, std::vector<float> data, std::vector<uint32_t> indices);
-		void consume(PrefabType prefabType);
+		void consume(PrefabType prefabType, std::vector<float> data, std::vector<uint32_t> indices);
+		//void consume(PrefabType prefabType);
 		void transform(glm::vec3 vector);
-		
+		int VertexCount;
 		VkTransformMatrixKHR transformMatrix;
 		std::vector<float> vertexLump;
 		std::vector<uint32_t> indexLump;
@@ -43,8 +43,8 @@ namespace vkAccelerationStructure {
 		void finalize(FinalizationChunk finalizationChunk, VkCommandPool commandPool,uint32_t& re);
 		void create_top_acceleration_structure(VkPhysicalDevice physicalDevice,VkCommandBuffer commandBuffer, VkQueue queue, VkCommandPool commandPool);
 		Buffer vertexBuffer, indexBuffer, transformBuffer;
-		std::unordered_map<uint64_t, int> firstIndices;
-		std::unordered_map<uint64_t, int> indexCounts;
+		std::unordered_map<PrefabType, int> firstIndices;
+		std::unordered_map<PrefabType, int> indexCounts;
 		vkAccelerationStructure::AccelerationStructure  bottomLevelAS;
 		vkAccelerationStructure::AccelerationStructure  topLevelAS;
 
