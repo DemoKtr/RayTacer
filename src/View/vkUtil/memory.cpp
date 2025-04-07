@@ -1,4 +1,6 @@
 #include "View/vkUtil/memory.h"
+
+#include <string>
 #include <vector>
 
 uint32_t vkUtil::findMemoryTypeIndex(VkPhysicalDevice physicalDevice, uint32_t supportedMemoryIndices, VkMemoryPropertyFlags requestedProperties) {
@@ -50,8 +52,9 @@ void vkUtil::allocateBufferMemory(Buffer& buffer, const BufferInputChunk& input)
 
 
 	// Alokacja pamięci
-	if (vkAllocateMemory(input.logicalDevice, &allocInfo, nullptr, &buffer.bufferMemory) != VK_SUCCESS) {
-		throw std::runtime_error("Failed to allocate buffer memory!");
+	VkResult result = vkAllocateMemory(input.logicalDevice, &allocInfo, nullptr, &buffer.bufferMemory);
+	if (result != VK_SUCCESS) {
+		throw std::runtime_error("Failed to allocate buffer memory!" + std::to_string(result));
 	}
 
 	// Przypisanie pamięci do bufora

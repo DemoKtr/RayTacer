@@ -16,8 +16,7 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
 
-
-
+#include "View/vkMesh/obj_mesh.h"
 
 
 GraphicsEngine::GraphicsEngine(GLFWwindow* window, int width, int height, bool debugMode) {
@@ -297,6 +296,22 @@ void GraphicsEngine::make_assets() {
 	input.physicalDevice = physicalDevice;
 	input.queue = graphicsQueue;
 	input.commandBuffer = maincommandBuffer;
+	
+	glm::mat4 glmMatrix(1); // Assume this is your populated glm::mat4 matrix
+
+	VkTransformMatrixKHR vkMatrix;
+
+	for(int i = 0; i < 3; i++)
+	{
+		for(int j = 0; j < 4; j++)
+		{
+			vkMatrix.matrix[i][j] = glmMatrix[j][i]; // Note the swapped indices due to column-major vs row-major discrepancy
+		}
+	}
+	
+	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/box.obj", "resources/models/box.mtl",glm::mat4(1.0f)),vkMatrix);
+	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/sphere.obj", "resources/models/sphere.mtl",glm::mat4(1.0f)),vkMatrix);
+
 	accelerationStructure->finalize(input, CommandPool, bufferSize);
 }
 
