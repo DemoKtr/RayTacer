@@ -89,8 +89,8 @@ void vkAccelerationStructure::VertexMenagerie::create_blas(vkAccelerationStructu
     vkFreeMemory(logicalDevice, stagingBuffer.bufferMemory, nullptr);
 
 
-    // Staging buffer for indices
-    inputChunk.size = sizeof(uint32_t) * mesh.indices.size();
+    // Staging buffer for VkTransformMatrixKHR
+    inputChunk.size = sizeof(VkTransformMatrixKHR);
     inputChunk.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
     inputChunk.memoryProperties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
@@ -98,7 +98,7 @@ void vkAccelerationStructure::VertexMenagerie::create_blas(vkAccelerationStructu
 
 
     vkMapMemory(logicalDevice, stagingBuffer.bufferMemory, 0, inputChunk.size, 0, &memoryLocation);
-    memcpy(memoryLocation, mesh.indices.data(), inputChunk.size);
+    memcpy(memoryLocation, &transformMatrix, inputChunk.size);
     vkUnmapMemory(logicalDevice, stagingBuffer.bufferMemory);
 
     // Create index buffer
@@ -274,11 +274,12 @@ void vkAccelerationStructure::VertexMenagerie::create_top_acceleration_structure
     vkGetAccelerationStructureDeviceAddressKHR = (PFN_vkGetAccelerationStructureDeviceAddressKHR) (vkGetDeviceProcAddr(
         logicalDevice, "vkGetAccelerationStructureDeviceAddressKHR"));
 
-    const uint32_t numInstances = 2;  // Example: 3 instances referencing different BLAS
-    VkAccelerationStructureInstanceKHR instances[numInstances] = {};
+    std::vector<VkAccelerationStructureInstanceKHR> instances;
+    instances.reserve(bottomLevelASes.size());
     
     // Populate each instance with a reference to a different BLAS
     for (uint32_t i = 0; i < bottomLevelASes.size(); ++i) {
+        instances.push_back(VkAccelerationStructureInstanceKHR{});
         instances[i].transform = transformMatrixes[i];  // Assuming a shared transform matrix
         instances[i].instanceCustomIndex = i;
         instances[i].mask = 0xFF;
@@ -294,7 +295,7 @@ void vkAccelerationStructure::VertexMenagerie::create_top_acceleration_structure
     BufferInputChunk inputChunk{};
     inputChunk.logicalDevice = logicalDevice;
     inputChunk.physicalDevice = physicalDevice;
-    inputChunk.size = sizeof(VkAccelerationStructureInstanceKHR) * numInstances;  // Size for multiple instances
+    inputChunk.size = sizeof(VkAccelerationStructureInstanceKHR) * bottomLevelASes.size();  // Size for multiple instances
     inputChunk.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
     inputChunk.memoryProperties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
@@ -306,7 +307,7 @@ void vkAccelerationStructure::VertexMenagerie::create_top_acceleration_structure
     // Fill it with vertex data (instance data)
     void *memoryLocation = nullptr;
     vkMapMemory(logicalDevice, stagingBuffer.bufferMemory, 0, inputChunk.size, 0, &memoryLocation);
-    memcpy(memoryLocation, instances, inputChunk.size);  // Copy the instances array
+    memcpy(memoryLocation, instances.data(), inputChunk.size);  // Copy the instances array
     vkUnmapMemory(logicalDevice, stagingBuffer.bufferMemory);
 
     inputChunk.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT |
@@ -346,7 +347,7 @@ void vkAccelerationStructure::VertexMenagerie::create_top_acceleration_structure
     accelerationStructureBuildGeometryInfo.geometryCount = 1;
     accelerationStructureBuildGeometryInfo.pGeometries = &accelerationStructureGeometry;
 
-    uint32_t primitive_count = numInstances;  // Number of instances
+    uint32_t primitive_count = bottomLevelASes.size();  // Number of instances
 
     VkAccelerationStructureBuildSizesInfoKHR accelerationStructureBuildSizesInfo{};
     accelerationStructureBuildSizesInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
@@ -382,7 +383,7 @@ void vkAccelerationStructure::VertexMenagerie::create_top_acceleration_structure
     accelerationBuildGeometryInfo.scratchData.deviceAddress = scratchBuffer.deviceAddress;
 
     VkAccelerationStructureBuildRangeInfoKHR accelerationStructureBuildRangeInfo{};
-    accelerationStructureBuildRangeInfo.primitiveCount = numInstances;  // Adjusted for multiple instances
+    accelerationStructureBuildRangeInfo.primitiveCount = bottomLevelASes.size();  // Adjusted for multiple instances
     accelerationStructureBuildRangeInfo.primitiveOffset = 0;
     accelerationStructureBuildRangeInfo.firstVertex = 0;
     accelerationStructureBuildRangeInfo.transformOffset = 0;
