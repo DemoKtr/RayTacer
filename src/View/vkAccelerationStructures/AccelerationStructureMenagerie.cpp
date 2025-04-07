@@ -17,7 +17,7 @@ void vkAccelerationStructure::VertexMenagerie::create_blas(vkAccelerationStructu
     Buffer vertexBuffer, indexBuffer, transformBuffer;
     bottomLevelASes.push_back(vkAccelerationStructure::AccelerationStructure {});
     transformMatrixes.push_back(transformMatrix);
-
+    size += sizeof(float) * mesh.vertices.size();
     
     const uint32_t  numTriangles = static_cast<int>(mesh.vertices.size() / 3);
     
@@ -258,6 +258,7 @@ void vkAccelerationStructure::VertexMenagerie::create_blas(vkAccelerationStructu
 
 void vkAccelerationStructure::VertexMenagerie::finalize(vkAccelerationStructure::FinalizationChunk finalizationChunk,
                                                         VkCommandPool commandPool, uint32_t &re) {
+    re = size;
     create_top_acceleration_structure(finalizationChunk.physicalDevice, finalizationChunk.commandBuffer,finalizationChunk.queue, commandPool);
 }
 void vkAccelerationStructure::VertexMenagerie::create_top_acceleration_structure(
@@ -285,9 +286,10 @@ void vkAccelerationStructure::VertexMenagerie::create_top_acceleration_structure
         instances[i].mask = 0xFF;
         instances[i].instanceShaderBindingTableRecordOffset = 0;
         instances[i].flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
-
+        
         // Assign the device address of the corresponding BLAS
         instances[i].accelerationStructureReference = bottomLevelASes[i].deviceAddress;  // Assuming an array of BLAS
+
     }
 
     // Buffer for instance data

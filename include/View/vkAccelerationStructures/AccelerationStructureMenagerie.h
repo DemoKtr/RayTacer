@@ -53,6 +53,7 @@ namespace vkAccelerationStructure {
 		
 		std::vector<vkAccelerationStructure::AccelerationStructure>  bottomLevelASes;
 		std::vector<VkTransformMatrixKHR> transformMatrixes;
+		uint32_t size = 0;
 	
 		vkAccelerationStructure::AccelerationStructure  topLevelAS;
 
