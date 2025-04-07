@@ -35,19 +35,46 @@ void vkUtil::SwapChainFrame::make_descriptors_resources() {
 
 	vkCreateSampler(logicalDevice, &samplerInfo, nullptr, &sampler);
 
-	BufferInputChunk input;
-	input.logicalDevice = logicalDevice;
-	input.memoryProperties = VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-	input.physicalDevice = physicalDevice;
-	input.size = sizeof(UBO);
-	input.usage = VkBufferUsageFlagBits::VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-	vkUtil::createBuffer(input,ubo);
+	BufferInputChunk inputCamera;
+	inputCamera.logicalDevice = logicalDevice;
+	inputCamera.memoryProperties = VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+	inputCamera.physicalDevice = physicalDevice;
+	inputCamera.size = sizeof(UBO);
+	inputCamera.usage = VkBufferUsageFlagBits::VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+	vkUtil::createBuffer(inputCamera,ubo);
 	vkMapMemory(logicalDevice, ubo.bufferMemory, 0, sizeof(UBO), 0, &uboDataWriteLocation);
 
 	uboDescritorBufferInfo.buffer = ubo.buffer;
 	uboDescritorBufferInfo.offset = 0;
 	uboDescritorBufferInfo.range = sizeof(UBO);
 
+
+	BufferInputChunk inputLight;
+	inputLight.logicalDevice = logicalDevice;
+	inputLight.memoryProperties = VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+	inputLight.physicalDevice = physicalDevice;
+	inputLight.size = sizeof(Light);
+	inputLight.usage = VkBufferUsageFlagBits::VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+	vkUtil::createBuffer(inputLight,light);
+	vkMapMemory(logicalDevice, light.bufferMemory, 0, sizeof(Light), 0, &lightDataWriteLocation);
+
+	lightDescritorBufferInfo.buffer = light.buffer;
+	lightDescritorBufferInfo.offset = 0;
+	lightDescritorBufferInfo.range = sizeof(Light);
+
+
+	BufferInputChunk inputMaterial;
+	inputMaterial.logicalDevice = logicalDevice;
+	inputMaterial.memoryProperties = VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+	inputMaterial.physicalDevice = physicalDevice;
+	inputMaterial.size = sizeof(Material);
+	inputMaterial.usage = VkBufferUsageFlagBits::VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+	vkUtil::createBuffer(inputMaterial,material);
+	vkMapMemory(logicalDevice, material.bufferMemory, 0, sizeof(Material), 0, &materialDataWriteLocation);
+
+	materialDescritorBufferInfo.buffer = material.buffer;
+	materialDescritorBufferInfo.offset = 0;
+	materialDescritorBufferInfo.range = sizeof(Material);
 
 }
 
@@ -70,7 +97,6 @@ void vkUtil::SwapChainFrame::write_descriptors(VkAccelerationStructureKHR handle
 	writeInfo2.pNext = nullptr;
 	vkUpdateDescriptorSets(logicalDevice, 1, &writeInfo2, 0, nullptr);
 
-
 	
 	VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureInfo{};
 	accelerationStructureInfo.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR;
@@ -89,6 +115,7 @@ void vkUtil::SwapChainFrame::write_descriptors(VkAccelerationStructureKHR handle
 
 	vkUpdateDescriptorSets(logicalDevice, 1, &writeInfo3, 0, nullptr);
 
+
 	VkWriteDescriptorSet writeInfo4;
 	writeInfo4.sType = VkStructureType::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	writeInfo4.dstSet = RayGenDescriptorSet;
@@ -99,8 +126,33 @@ void vkUtil::SwapChainFrame::write_descriptors(VkAccelerationStructureKHR handle
 	writeInfo4.pBufferInfo = &uboDescritorBufferInfo;
 	writeInfo4.pNext = nullptr;
 
-	vkUpdateDescriptorSets(logicalDevice, 1, &writeInfo4, 0, nullptr);
+	VkWriteDescriptorSet writeInfo5;
+	writeInfo5.sType = VkStructureType::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	writeInfo5.dstSet = RayGenDescriptorSet;
+	writeInfo5.dstBinding = 3;
+	writeInfo5.dstArrayElement = 0;
+	writeInfo5.descriptorType = VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	writeInfo5.descriptorCount = 1;
+	writeInfo5.pBufferInfo = &lightDescritorBufferInfo;
+	writeInfo5.pNext = nullptr;
+	
+	VkWriteDescriptorSet writeInfo6;
+	writeInfo6.sType = VkStructureType::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	writeInfo6.dstSet = RayGenDescriptorSet;
+	writeInfo6.dstBinding = 4;
+	writeInfo6.dstArrayElement = 0;
+	writeInfo6.descriptorType = VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	writeInfo6.descriptorCount = 1;
+	writeInfo6.pBufferInfo = &materialDescritorBufferInfo;
+	writeInfo6.pNext = nullptr;
+	
+	
+	
+	VkWriteDescriptorSet writeInfos[] = {writeInfo4, writeInfo5, writeInfo6};
 
+	
+	vkUpdateDescriptorSets(logicalDevice, 3, writeInfos, 0, nullptr);
+	
 	VkDescriptorImageInfo imageDescriptor;
 
 	imageDescriptor.imageLayout = VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;

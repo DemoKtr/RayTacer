@@ -27,8 +27,6 @@ namespace vkAccelerationStructure {
 	class VertexMenagerie
 	{
 	private:
-		int indexOffset;
-
 		VkDevice logicalDevice;
 
 	public:

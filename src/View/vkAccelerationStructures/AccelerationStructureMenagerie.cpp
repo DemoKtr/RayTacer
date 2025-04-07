@@ -19,7 +19,7 @@ void vkAccelerationStructure::VertexMenagerie::create_blas(vkAccelerationStructu
     transformMatrixes.push_back(transformMatrix);
     size += sizeof(float) * mesh.vertices.size();
     
-    const uint32_t  numTriangles = static_cast<int>(mesh.vertices.size() / 3);
+    const uint32_t  numTriangles = mesh.vertices.size() / 3;
     
     logicalDevice = finalizationChunk.logicalDevice;
     
@@ -136,7 +136,7 @@ void vkAccelerationStructure::VertexMenagerie::create_blas(vkAccelerationStructu
             VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
     accelerationStructureGeometry.geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
     accelerationStructureGeometry.geometry.triangles.vertexData = vertexBufferDeviceAddress;
-    accelerationStructureGeometry.geometry.triangles.maxVertex = *std::max_element(mesh.indices.begin(), mesh.indices.end());
+    accelerationStructureGeometry.geometry.triangles.maxVertex = *std::ranges::max_element(mesh.indices);
     accelerationStructureGeometry.geometry.triangles.vertexStride = sizeof(float) * 3;
     accelerationStructureGeometry.geometry.triangles.indexType = VK_INDEX_TYPE_UINT32;
     accelerationStructureGeometry.geometry.triangles.indexData = indexBufferDeviceAddress;

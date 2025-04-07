@@ -350,9 +350,11 @@ void GraphicsEngine::create_frame_resources() {
 	bindings.types[0] = VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 	vkInit::make_descriptor_pool(device, rayCastDescriptorPool, static_cast<uint32_t>(swapchainFrames.size()), bindings);
 
-	bindings.count = 3;
+	bindings.count = 5;
 	bindings.types[0] = VkDescriptorType::VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
 	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
 	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
 	vkInit::make_descriptor_pool(device, rayGenDescriptorPool, static_cast<uint32_t>(swapchainFrames.size()), bindings);
 	for (vkUtil::SwapChainFrame& frame : swapchainFrames) //referencja 
@@ -389,11 +391,10 @@ void GraphicsEngine::create_descriptor_set_layouts() {
 	vkInit::make_descriptor_set_layout(device, bindings, rayCastDescriptorSetLayout);
 
 
-	bindings.count = 3;
-
+	bindings.count = 5;
+	
 	bindings.types[0] = VkDescriptorType::VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
 	bindings.stages[0] = (VkShaderStageFlagBits::VK_SHADER_STAGE_RAYGEN_BIT_KHR);
-	
 
 	bindings.indices.push_back(1);
 	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
@@ -405,6 +406,17 @@ void GraphicsEngine::create_descriptor_set_layouts() {
 	bindings.counts.push_back(1);
 	bindings.stages.push_back(VkShaderStageFlagBits::VK_SHADER_STAGE_RAYGEN_BIT_KHR);
 
+	bindings.indices.push_back(3);
+	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+	bindings.counts.push_back(1);
+	bindings.stages.push_back(VkShaderStageFlagBits::VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+
+	bindings.indices.push_back(4);
+	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+	bindings.counts.push_back(1);
+	bindings.stages.push_back(VkShaderStageFlagBits::VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+
+	
 	vkInit::make_descriptor_set_layout(device, bindings, rayGenDescriptorSetLayout);
 	
 }
@@ -796,5 +808,15 @@ void GraphicsEngine::prepare_frame(uint32_t imageIndex) {
 	_frame.uboData.inverseProj = glm::inverse(projection);
 	_frame.uboData.inverseView = glm::inverse(view);
 	memcpy(_frame.uboDataWriteLocation, &(_frame.uboData), sizeof(vkUtil::UBO));
+
+	_frame.lightData.position = glm::vec4(1);
+	_frame.lightData.intensity = glm::vec4(1);
+	memcpy(_frame.lightDataWriteLocation, &(_frame.lightData), sizeof(vkUtil::Light));
+
+	_frame.materialData.color = glm::vec3(0.4);
+	_frame.materialData.shininess =  0.5f;
+	_frame.materialData.ambientCoefficient = 0.5f;
+	memcpy(_frame.materialDataWriteLocation, &(_frame.materialData), sizeof(vkUtil::Material));
+	
 	_frame.write_descriptors(accelerationStructure->topLevelAS.handle, bufferSize);
 }

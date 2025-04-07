@@ -9,6 +9,17 @@ namespace vkUtil {
 		glm::mat4 inverseProj;
 	};
 
+	struct Light {
+		glm::vec4 position;
+		glm::vec4 intensity;
+	};
+	
+	struct Material {
+		glm::vec3 color;
+		float shininess;
+		float ambientCoefficient;
+	};
+
 	class SwapChainFrame {
 	public:
 		VkDevice logicalDevice;
@@ -39,6 +50,16 @@ namespace vkUtil {
 		void* uboDataWriteLocation;
 		VkDescriptorBufferInfo uboDescritorBufferInfo;
 		UBO uboData;
+
+		Buffer light;
+		void* lightDataWriteLocation;
+		VkDescriptorBufferInfo lightDescritorBufferInfo;
+		Light lightData;
+		
+		Buffer material;
+		void* materialDataWriteLocation;
+		VkDescriptorBufferInfo materialDescritorBufferInfo;
+		Material materialData;
 
 
 		void destroy();
