@@ -347,15 +347,17 @@ void GraphicsEngine::create_frame_resources() {
 
 	vkInit::make_descriptor_pool(device, finalImageDescriptorPool,static_cast<uint32_t>(swapchainFrames.size()), bindings);
 
+	bindings.count = 3;
 	bindings.types[0] = VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
 	vkInit::make_descriptor_pool(device, rayCastDescriptorPool, static_cast<uint32_t>(swapchainFrames.size()), bindings);
 
-	bindings.count = 5;
+	bindings.count = 3;
 	bindings.types[0] = VkDescriptorType::VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
 	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+
 	vkInit::make_descriptor_pool(device, rayGenDescriptorPool, static_cast<uint32_t>(swapchainFrames.size()), bindings);
 	for (vkUtil::SwapChainFrame& frame : swapchainFrames) //referencja 
 	{
@@ -409,12 +411,12 @@ void GraphicsEngine::create_descriptor_set_layouts() {
 	bindings.indices.push_back(3);
 	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
 	bindings.counts.push_back(1);
-	bindings.stages.push_back(VkShaderStageFlagBits::VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+	bindings.stages.push_back(VkShaderStageFlagBits::VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
 
 	bindings.indices.push_back(4);
 	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
 	bindings.counts.push_back(1);
-	bindings.stages.push_back(VkShaderStageFlagBits::VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+	bindings.stages.push_back(VkShaderStageFlagBits::VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
 
 	
 	vkInit::make_descriptor_set_layout(device, bindings, rayGenDescriptorSetLayout);
@@ -813,8 +815,8 @@ void GraphicsEngine::prepare_frame(uint32_t imageIndex) {
 	_frame.lightData.intensity = glm::vec4(1);
 	memcpy(_frame.lightDataWriteLocation, &(_frame.lightData), sizeof(vkUtil::Light));
 
-	_frame.materialData.color = glm::vec3(0.4);
-	_frame.materialData.shininess =  0.5f;
+	_frame.materialData.color = glm::vec3(0.1);
+	_frame.materialData.shininess =  1.0f;
 	_frame.materialData.ambientCoefficient = 0.5f;
 	memcpy(_frame.materialDataWriteLocation, &(_frame.materialData), sizeof(vkUtil::Material));
 	
