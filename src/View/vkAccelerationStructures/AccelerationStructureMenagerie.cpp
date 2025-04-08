@@ -17,9 +17,9 @@ void vkAccelerationStructure::VertexMenagerie::create_blas(vkAccelerationStructu
     Buffer vertexBuffer, indexBuffer, transformBuffer;
     bottomLevelASes.push_back(vkAccelerationStructure::AccelerationStructure {});
     transformMatrixes.push_back(transformMatrix);
-    size += sizeof(float) * mesh.vertices.size();
+    size += sizeof(float) * mesh.indices.size();
     
-    const uint32_t  numTriangles = mesh.vertices.size() / 3;
+    const uint32_t  numTriangles = mesh.indices.size() / 3;
     
     logicalDevice = finalizationChunk.logicalDevice;
     
