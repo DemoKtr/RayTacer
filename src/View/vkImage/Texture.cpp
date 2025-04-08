@@ -29,6 +29,7 @@ vkImage::Texture::Texture(TextureInputChunk info) {
 	imageInput.usage = VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_SAMPLED_BIT;
 	imageInput.memoryProperties = VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 	imageInput.image = &image;
+	imageInput.flags = 0;
 	make_image(imageInput);
 	imageMemory = make_image_memory(imageInput, image);
 
@@ -169,7 +170,7 @@ void vkImage::Texture::make_sampler() {
 	samplerInfo.mipLodBias = 0.0f;
 	samplerInfo.minLod = 0.0f;
 	samplerInfo.maxLod = 0.0f;
-
+	samplerInfo.pNext = nullptr;
 	vkCreateSampler(logicalDevice, &samplerInfo, nullptr, &sampler);
 
 }
@@ -191,5 +192,6 @@ void vkImage::Texture::make_descriptor_set() {
 	descriptorWrite.descriptorType = VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	descriptorWrite.descriptorCount = 1;
 	descriptorWrite.pImageInfo = &imageDescriptor;
+	descriptorWrite.pNext = nullptr;
 	vkUpdateDescriptorSets(logicalDevice, 1, &descriptorWrite, 0, nullptr);
 }

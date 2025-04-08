@@ -38,6 +38,7 @@ void vkImage::make_image(ImageInputChunk input) {
 	imageInfo.usage = input.usage;
 	imageInfo.sharingMode = VkSharingMode::VK_SHARING_MODE_EXCLUSIVE;
 	imageInfo.samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
+	imageInfo.pNext = nullptr;
 	VkResult result = vkCreateImage(input.logicalDevice, &imageInfo, nullptr, input.image);
 	if (result != VK_SUCCESS) {
 		std::cerr << "vkCreateImage error: " << result << std::endl;
@@ -55,7 +56,7 @@ VkDeviceMemory vkImage::make_image_memory(ImageInputChunk input, VkImage image) 
 	allocation.memoryTypeIndex = vkUtil::findMemoryTypeIndex(
 		input.physicalDevice, requirements.memoryTypeBits, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
 	);
-
+	allocation.pNext = nullptr;
 	
 		VkDeviceMemory imageMemory;
 		vkAllocateMemory(input.logicalDevice, &allocation, nullptr, &imageMemory);
