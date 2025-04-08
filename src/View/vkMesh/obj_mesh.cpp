@@ -106,9 +106,9 @@ void vkMesh::ObjMesh::read_corner(const std::string& vertex_description) {
 	vertices.push_back(pos[2]);
 
 	//color
-	vertices.push_back(brushColor.r);
-	vertices.push_back(brushColor.g);
-	vertices.push_back(brushColor.b);
+	//vertices.push_back(brushColor.r);
+	//vertices.push_back(brushColor.g);
+	//vertices.push_back(brushColor.b);
 	//vertices.push_back(brushColor.r);
 	//vertices.push_back(brushColor.g);
 	//vertices.push_back(brushColor.b);
@@ -118,8 +118,8 @@ void vkMesh::ObjMesh::read_corner(const std::string& vertex_description) {
 	if (v_vt_vn.size() == 3 && v_vt_vn[1].size() > 0) {
 		texcoord = vt[std::stol(v_vt_vn[1]) - 1];
 	}
-	vertices.push_back(texcoord[0]);
-	vertices.push_back(texcoord[1]);
+	//vertices.push_back(texcoord[0]);
+	//vertices.push_back(texcoord[1]);
 	//vertices.push_back(texcoord[0]);
 	//vertices.push_back(texcoord[1]);
 }
