@@ -1,8 +1,21 @@
 #pragma once
 #include "config.h"
 #include <vector>
-
+#include "View/vkImage/stb_image.h"
 namespace vkImage {	
+
+
+	struct TextureInputChunk {
+		VkDevice logicalDevice;
+		VkPhysicalDevice physicalDevice;
+		std::vector<std::string> texturesNames;
+		const char* filenames;
+		VkCommandBuffer commandBuffer;
+		VkQueue queue;
+		VkDescriptorSetLayout layout;
+		VkDescriptorPool descriptorPool;
+
+	};
 
 	struct ImageInputChunk {
 		VkDevice logicalDevice;
@@ -14,7 +27,7 @@ namespace vkImage {
 		VkFormat format;
 		uint32_t arrayCount;
 		VkImageCreateFlags flags;
-		VkImage& image;
+		VkImage* image;
 	};
 
 	struct Image3DInputChunk {

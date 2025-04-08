@@ -6,7 +6,7 @@
 #include <vector>
 #include "View/vkUtil/frame.h"
 #include "View/vkAccelerationStructures/AccelerationStructureMenagerie.h"
-
+#include "View/vkImage/Texture.h"
 
 
 class GraphicsEngine {
@@ -62,6 +62,9 @@ class GraphicsEngine {
 	VkDescriptorPool rayGenDescriptorPool;
 	VkDescriptorSetLayout rayGenDescriptorSetLayout;
 
+	VkDescriptorPool textureDescriptorPool;
+	VkDescriptorSetLayout textureDescriptorSetLayout;
+
 	std::vector<vkUtil::SwapChainFrame> swapchainFrames;
 
 
@@ -71,6 +74,7 @@ class GraphicsEngine {
 	Buffer missShaderBindingTable;
 	Buffer raygenShaderBindingTable;
 
+	vkImage::Texture* textures;
 
 	void make_instance(); //instance Setup
 	void choice_device();

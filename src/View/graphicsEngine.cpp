@@ -290,6 +290,30 @@ void GraphicsEngine::finalize_setup() {
 }
 
 void GraphicsEngine::make_assets() {
+
+
+	vkInit::descriptorSetLayoutData bindings;
+	bindings.count = 1;
+	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+	vkInit::make_descriptor_pool(device,textureDescriptorPool ,static_cast<uint32_t>(2), bindings);
+
+	std::vector<std::string> texturesNames;
+	texturesNames.push_back("resources/textures/diffuse.png");
+
+	vkImage::TextureInputChunk inputTexture;
+	inputTexture.logicalDevice = device;
+	inputTexture.physicalDevice = physicalDevice;
+	inputTexture.texturesNames = texturesNames;
+	inputTexture.filenames = nullptr;
+	inputTexture.queue = graphicsQueue;
+	inputTexture.commandBuffer = maincommandBuffer;
+	inputTexture.layout = textureDescriptorSetLayout;
+	inputTexture.descriptorPool = textureDescriptorPool;
+
+	textures = new vkImage::Texture(inputTexture);
+
+
+
 	accelerationStructure = new vkAccelerationStructure::VertexMenagerie();
 	vkAccelerationStructure::FinalizationChunk input;
 	input.logicalDevice = device;
@@ -390,6 +414,8 @@ void GraphicsEngine::create_descriptor_set_layouts() {
 
 
 	vkInit::make_descriptor_set_layout(device, bindings, finalImageDescriptorSetLayout);
+	bindings.stages[0] = VkShaderStageFlagBits::VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+	vkInit::make_descriptor_set_layout(device, bindings, textureDescriptorSetLayout);
 	bindings.types[0] = VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 	bindings.stages[0] = (VkShaderStageFlagBits::VK_SHADER_STAGE_COMPUTE_BIT);
 	vkInit::make_descriptor_set_layout(device, bindings, rayCastDescriptorSetLayout);
