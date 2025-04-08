@@ -15,6 +15,9 @@ layout(binding = 4, set = 0) uniform Material
     float ambientCoefficient;
 } material; 
 
+layout(set=1,binding=0) uniform sampler2DArray textureAtlas;
+	
+
 // Assuming there is an implementation of the Phong Lighting Shader
 vec3 CalculatePhongLighting(vec3 lightDir, vec4 lightIntensity,
                             vec3 normal, vec3 viewDir, 
@@ -29,7 +32,9 @@ void main()
 
     vec3 color = CalculatePhongLighting(lightDir, light.intensity, normal, viewDir, material.color, material.shininess, material.ambientCoefficient);
 
-    hitValue = color;
+    //hitValue = color;
+	// 0.5 i 0.1f podmienic na UV
+	hitValue = texture(textureAtlas, vec3(.5f,0.1f, 0)).rgb;
 }
 
 vec3 CalculatePhongLighting(vec3 lightDir, vec4 lightIntensity,

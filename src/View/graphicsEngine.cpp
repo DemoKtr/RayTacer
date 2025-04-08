@@ -274,6 +274,7 @@ void GraphicsEngine::create_pipeline() {
 	
 	vkInit::RayTracingPipelineBuilder rayBuilder(physicalDevice,device);
 	rayBuilder.add_descriptor_set_layout(rayGenDescriptorSetLayout);
+	rayBuilder.add_descriptor_set_layout(textureDescriptorSetLayout);
 	rayBuilder.specify_ray_gen_shader("resources/shaders/raygen.spv");
 	rayBuilder.specify_miss_shader("resources/shaders/miss.spv");
 	rayBuilder.specify_closest_hit_shader("resources/shaders/closesthit.spv");
@@ -298,7 +299,7 @@ void GraphicsEngine::make_assets() {
 	vkInit::make_descriptor_pool(device,textureDescriptorPool ,static_cast<uint32_t>(2), bindings);
 
 	std::vector<std::string> texturesNames;
-	texturesNames.push_back("resources/textures/diffuse.png");
+	texturesNames.push_back("resources/textures/diffuse2.png");
 
 	vkImage::TextureInputChunk inputTexture;
 	inputTexture.logicalDevice = device;
@@ -522,6 +523,7 @@ void GraphicsEngine::record_draw_command(VkCommandBuffer commandBuffer, uint32_t
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipelineInfo.pipeline);
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipelineInfo.pipelineLayout, 0, 1,
 		&swapchainFrames[imageIndex].RayGenDescriptorSet, 0, 0);
+	textures->useTexture(commandBuffer, pipelineInfo.pipelineLayout);
 	PFN_vkCmdTraceRaysKHR vkCmdTraceRaysKHR =
 		(PFN_vkCmdTraceRaysKHR)vkGetDeviceProcAddr(device, "vkCmdTraceRaysKHR");
 	vkCmdTraceRaysKHR(

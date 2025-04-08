@@ -52,7 +52,7 @@ vkImage::Texture::~Texture() {
 }
 
 void vkImage::Texture::useTexture(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout) {
-	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipelineLayout, 0, 1, &descriptorSet, 0, 0);
+	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipelineLayout, 1, 1, &descriptorSet, 0, 0);
 }
 
 void vkImage::Texture::load() {
