@@ -8,17 +8,6 @@ layout(binding = 2, set = 0) uniform CameraProperties
     mat4 viewInverse;
     mat4 projInverse;
 } cam;
-layout(binding = 3, set = 0) uniform LightSource
-{
-    vec4 position;
-    vec4 intensity;
-} light; 
-layout(binding = 4, set = 0) uniform Material
-{
-    vec3 color;
-    float shininess;
-    float ambientCoefficient;
-} material; 
 
 layout(location = 0) rayPayloadEXT vec3 hitValue;
 

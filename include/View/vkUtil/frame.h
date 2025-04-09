@@ -2,6 +2,11 @@
 #include "config.h"
 #include "descriptorsBuffers.h"
 #include "glm/glm.hpp"
+
+namespace vkAccelerationStructure {
+	class VertexMenagerie;
+}
+
 namespace vkUtil {
 
 	struct UBO {
@@ -60,10 +65,19 @@ namespace vkUtil {
 		void* materialDataWriteLocation;
 		VkDescriptorBufferInfo materialDescritorBufferInfo;
 		Material materialData;
-
+		
+		Buffer normalsAndTextcords;
+		void* normalsAndTextcordsDataWriteLocation;
+		VkDescriptorBufferInfo normalsAndTextcordsDescritorBufferInfo;
+		std::vector<float> normalsAndTextcordsData;
+		
+		Buffer offsets;
+		void* offsetsDataWriteLocation;
+		VkDescriptorBufferInfo offsetsBufferInfo;
+		std::vector<float> offsetsData;
 
 		void destroy();
-		void make_descriptors_resources();
+		void make_descriptors_resources(vkAccelerationStructure::VertexMenagerie *vertexMenagerie);
 		void write_descriptors(VkAccelerationStructureKHR handle, uint32_t size);
 	};
 

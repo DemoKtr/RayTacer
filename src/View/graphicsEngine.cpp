@@ -36,13 +36,13 @@ GraphicsEngine::GraphicsEngine(GLFWwindow* window, int width, int height, bool d
 	create_swapchain();
 	create_descriptor_set_layouts();
 	create_frame_command_buffer();
+	
+	make_assets();
+
 	create_pipeline();
 
 	
 	finalize_setup();
-
-	make_assets();
-
 }
 
 void GraphicsEngine::render() {
@@ -382,8 +382,10 @@ void GraphicsEngine::create_frame_resources() {
 	bindings.types[0] = VkDescriptorType::VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
 	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER); //material
+	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER); //lights
+	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); //texcord an normals
+	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); //offsets
 
 	vkInit::make_descriptor_pool(device, rayGenDescriptorPool, static_cast<uint32_t>(swapchainFrames.size()), bindings);
 	for (vkUtil::SwapChainFrame& frame : swapchainFrames) //referencja 
@@ -392,7 +394,7 @@ void GraphicsEngine::create_frame_resources() {
 		vkInit::make_semaphore(device, frame.renderFinished,debugMode);
 		vkInit::make_semaphore(device, frame.computeFinished,debugMode);
 		vkInit::make_fence(device, frame.inFlight,debugMode);
-		frame.make_descriptors_resources();
+		frame.make_descriptors_resources(accelerationStructure);
 		vkInit::allocate_descriptor_set(device, frame.postProcessDescriptorSet,finalImageDescriptorPool, finalImageDescriptorSetLayout);
 		vkInit::allocate_descriptor_set(device, frame.RayCastDescriptorSet,rayCastDescriptorPool, rayCastDescriptorSetLayout);
 		vkInit::allocate_descriptor_set(device, frame.RayGenDescriptorSet,rayGenDescriptorPool, rayGenDescriptorSetLayout);
@@ -447,6 +449,15 @@ void GraphicsEngine::create_descriptor_set_layouts() {
 	bindings.counts.push_back(1);
 	bindings.stages.push_back(VkShaderStageFlagBits::VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
 
+	bindings.indices.push_back(5);
+	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+	bindings.counts.push_back(1);
+	bindings.stages.push_back(VkShaderStageFlagBits::VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
+	
+	bindings.indices.push_back(6);
+	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+	bindings.counts.push_back(1);
+	bindings.stages.push_back(VkShaderStageFlagBits::VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
 	
 	vkInit::make_descriptor_set_layout(device, bindings, rayGenDescriptorSetLayout);
 	
@@ -849,6 +860,10 @@ void GraphicsEngine::prepare_frame(uint32_t imageIndex) {
 	_frame.materialData.shininess =  1.0f;
 	_frame.materialData.ambientCoefficient = 0.5f;
 	memcpy(_frame.materialDataWriteLocation, &(_frame.materialData), sizeof(vkUtil::Material));
+
+	
+	memcpy(_frame.normalsAndTextcordsDataWriteLocation, (accelerationStructure->extraBlasDatas.data()), accelerationStructure->totalExtraBLASBufferSize);
+	memcpy(_frame.offsetsDataWriteLocation, (accelerationStructure->extraBLASoffsets.data()),  sizeof(size_t) * accelerationStructure->extraBLASoffsets.size());
 	
 	_frame.write_descriptors(accelerationStructure->topLevelAS.handle, bufferSize);
 }

@@ -24,6 +24,13 @@ namespace vkAccelerationStructure {
 		VkCommandBuffer commandBuffer;
 	};
 
+	struct  ExtraBLASData {
+		std::vector<uint32_t> indecies;
+		std::vector<glm::vec3> normals;
+		std::vector<glm::vec2> textCords;
+	};
+	
+	
 	class VertexMenagerie
 	{
 	private:
@@ -34,26 +41,18 @@ namespace vkAccelerationStructure {
 		~VertexMenagerie();
 
 		void create_blas(vkAccelerationStructure::FinalizationChunk finalizationChunk,vkMesh::ObjMesh mesh,VkTransformMatrixKHR transformMatrix);
-
-		/*VkTransformMatrixKHR transformMatrix;
-		 *those should be local propobly
-		std::vector<float> vertexLump;
-		std::vector<uint32_t> indexLump;
-		Buffer vertexBuffer, indexBuffer, transformBuffer;
-		std::unordered_map<uint64_t, int> firstIndices;
-		std::unordered_map<uint64_t, int> indexCounts;
-			uint32_t numTriangles = 3;
-			*/
-
 		
 		void finalize(FinalizationChunk finalizationChunk, VkCommandPool commandPool,uint32_t& re);
 		void create_top_acceleration_structure(VkPhysicalDevice physicalDevice,VkCommandBuffer commandBuffer, VkQueue queue, VkCommandPool commandPool);
 		
 		std::vector<vkAccelerationStructure::AccelerationStructure>  bottomLevelASes;
 		std::vector<VkTransformMatrixKHR> transformMatrixes;
+	
 		uint32_t size = 0;
 	
 		vkAccelerationStructure::AccelerationStructure  topLevelAS;
-
+		std::vector<ExtraBLASData> extraBlasDatas;
+		std::vector<uint32_t> extraBLASoffsets;
+		uint32_t totalExtraBLASBufferSize = 0; 
 	};
 }

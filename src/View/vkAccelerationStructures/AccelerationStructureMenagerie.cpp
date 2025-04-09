@@ -14,9 +14,21 @@ vkAccelerationStructure::VertexMenagerie::~VertexMenagerie() {}
 
 
 void vkAccelerationStructure::VertexMenagerie::create_blas(vkAccelerationStructure::FinalizationChunk finalizationChunk,vkMesh::ObjMesh mesh,VkTransformMatrixKHR transformMatrix) {
-    Buffer vertexBuffer, indexBuffer, transformBuffer;
+    Buffer vertexBuffer, indexBuffer,uvBuffer, transformBuffer;
     bottomLevelASes.push_back(vkAccelerationStructure::AccelerationStructure {});
     transformMatrixes.push_back(transformMatrix);
+    
+    extraBlasDatas.push_back(ExtraBLASData(mesh.indices,mesh.vn,mesh.vt));
+
+    extraBLASoffsets.push_back( mesh.indices.size() * sizeof(uint32_t));
+    totalExtraBLASBufferSize += extraBLASoffsets.back();
+
+    extraBLASoffsets.push_back( mesh.vn.size() * sizeof(glm::vec3));
+    totalExtraBLASBufferSize += extraBLASoffsets.back();
+
+    extraBLASoffsets.push_back( mesh.vt.size() * sizeof(glm::vec2));
+    totalExtraBLASBufferSize += extraBLASoffsets.back();
+    
     size += sizeof(float) * mesh.indices.size();
     
     const uint32_t  numTriangles = mesh.indices.size() / 3;
@@ -144,6 +156,8 @@ void vkAccelerationStructure::VertexMenagerie::create_blas(vkAccelerationStructu
     accelerationStructureGeometry.geometry.triangles.transformData.hostAddress = nullptr;
     accelerationStructureGeometry.geometry.triangles.transformData = transformBufferDeviceAddress;
 
+
+    
     // Get size info
     VkAccelerationStructureBuildGeometryInfoKHR accelerationStructureBuildGeometryInfo{};
     accelerationStructureBuildGeometryInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR;
