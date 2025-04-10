@@ -424,7 +424,7 @@ void GraphicsEngine::create_descriptor_set_layouts() {
 	vkInit::make_descriptor_set_layout(device, bindings, rayCastDescriptorSetLayout);
 
 
-	bindings.count = 5;
+	bindings.count = 7;
 	
 	bindings.types[0] = VkDescriptorType::VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
 	bindings.stages[0] = (VkShaderStageFlagBits::VK_SHADER_STAGE_RAYGEN_BIT_KHR);
