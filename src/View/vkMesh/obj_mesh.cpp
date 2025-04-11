@@ -105,6 +105,13 @@ void vkMesh::ObjMesh::read_corner(const std::string& vertex_description) {
 	vertices.push_back(pos[1]);
 	vertices.push_back(pos[2]);
 
+
+
+	glm::vec3 normal = vn[std::stol(v_vt_vn[2]) - 1];
+
+	normals.push_back(normal.x);
+	normals.push_back(normal.y);
+	normals.push_back(normal.z);
 	//color
 	//vertices.push_back(brushColor.r);
 	//vertices.push_back(brushColor.g);
@@ -118,6 +125,8 @@ void vkMesh::ObjMesh::read_corner(const std::string& vertex_description) {
 	if (v_vt_vn.size() == 3 && v_vt_vn[1].size() > 0) {
 		texcoord = vt[std::stol(v_vt_vn[1]) - 1];
 	}
+	uv.push_back(texcoord.x);
+	uv.push_back(texcoord.y);
 	//vertices.push_back(texcoord[0]);
 	//vertices.push_back(texcoord[1]);
 	//vertices.push_back(texcoord[0]);
