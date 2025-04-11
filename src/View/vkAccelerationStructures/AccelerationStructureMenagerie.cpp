@@ -17,7 +17,9 @@ void vkAccelerationStructure::VertexMenagerie::create_blas(vkAccelerationStructu
     Buffer vertexBuffer, indexBuffer,uvBuffer, transformBuffer;
     bottomLevelASes.push_back(vkAccelerationStructure::AccelerationStructure {});
     transformMatrixes.push_back(transformMatrix);
-
+    if(extraBLASoffsets.size() == 0) {
+        extraBLASoffsets.push_back(0);
+    }
 
     extraBLASoffsets.push_back( mesh.v.size());
     for (const auto& v :  mesh.v)
