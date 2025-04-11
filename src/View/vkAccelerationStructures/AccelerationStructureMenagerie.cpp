@@ -21,7 +21,7 @@ void vkAccelerationStructure::VertexMenagerie::create_blas(vkAccelerationStructu
         extraBLASoffsets.push_back(0);
     }
 
-    extraBLASoffsets.push_back( mesh.v.size());
+    extraBLASoffsets.push_back( extraBLASoffsets.back() + mesh.v.size());
     for (const auto& v :  mesh.v)
     {
         inputArray.push_back(glm::vec4(v.x,v.y,v.z,0));
@@ -29,7 +29,7 @@ void vkAccelerationStructure::VertexMenagerie::create_blas(vkAccelerationStructu
     totalExtraBLASBufferSize +=mesh.v.size() * sizeof(glm::vec4);
 
     
-    extraBLASoffsets.push_back( mesh.indices.size()/3);
+    extraBLASoffsets.push_back(extraBLASoffsets.back() + mesh.indices.size()/3);
     for (std::vector<float>::size_type i = 0; i < mesh.indices.size() - 3; i+=3)
     {
         glm::vec4 indice = glm::vec4(
@@ -42,7 +42,7 @@ void vkAccelerationStructure::VertexMenagerie::create_blas(vkAccelerationStructu
     }
     totalExtraBLASBufferSize += mesh.indices.size()/3 * sizeof(glm::vec3);
 
-    extraBLASoffsets.push_back( mesh.normals.size()/3);
+    extraBLASoffsets.push_back(extraBLASoffsets.back() + mesh.normals.size()/3);
     for (std::vector<float>::size_type i = 0; i < mesh.normals.size() - 3; i+=3)
     {
         glm::vec4 normal = glm::vec4(
@@ -55,7 +55,7 @@ void vkAccelerationStructure::VertexMenagerie::create_blas(vkAccelerationStructu
     }
     totalExtraBLASBufferSize += mesh.normals.size()/3 * sizeof(glm::vec4);
 
-    extraBLASoffsets.push_back( mesh.uv.size()/2);
+    extraBLASoffsets.push_back(extraBLASoffsets.back() + mesh.uv.size()/2);
     for (std::vector<float>::size_type i = 0; i < mesh.uv.size() - 3; i+=2)
     {
         glm::vec4 uv = glm::vec4(
