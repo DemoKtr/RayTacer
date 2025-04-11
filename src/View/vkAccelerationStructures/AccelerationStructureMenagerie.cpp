@@ -36,22 +36,19 @@ void vkAccelerationStructure::VertexMenagerie::create_blas(vkAccelerationStructu
     }
     totalExtraBLASBufferSize += mesh.indices.size() * sizeof(glm::vec3);
 
-    extraBLASoffsets.push_back( mesh.vn.size());
-    for (const auto& vn :  mesh.vn)
+    extraBLASoffsets.push_back( mesh.normals.size());
+    for (const auto& normal :  mesh.normals)
     {
-        inputArray.push_back(vn.x);
-        inputArray.push_back(vn.y);
-        inputArray.push_back(vn.z);
+        inputArray.push_back(normal);
     }
-    totalExtraBLASBufferSize += mesh.vn.size() * sizeof(glm::vec3);
+    totalExtraBLASBufferSize += mesh.normals.size() * sizeof(glm::vec3);
 
-    extraBLASoffsets.push_back( mesh.vt.size());
-    for (const auto& vt :  mesh.vt)
+    extraBLASoffsets.push_back( mesh.uv.size());
+    for (const auto& uv :  mesh.uv)
     {
-        inputArray.push_back(vt.x);
-        inputArray.push_back(vt.y);
+        inputArray.push_back(uv);
     }
-    totalExtraBLASBufferSize += mesh.vt.size() * sizeof(glm::vec2);
+    totalExtraBLASBufferSize += mesh.uv.size() * sizeof(glm::vec2);
     
     size += sizeof(float) * mesh.indices.size();
     
