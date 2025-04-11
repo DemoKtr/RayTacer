@@ -17,17 +17,41 @@ void vkAccelerationStructure::VertexMenagerie::create_blas(vkAccelerationStructu
     Buffer vertexBuffer, indexBuffer,uvBuffer, transformBuffer;
     bottomLevelASes.push_back(vkAccelerationStructure::AccelerationStructure {});
     transformMatrixes.push_back(transformMatrix);
+
+
+    extraBLASoffsets.push_back( mesh.v.size());
+    for (const auto& v :  mesh.v)
+    {
+        inputArray.push_back(v.x);
+        inputArray.push_back(v.y);
+        inputArray.push_back(v.z);
+    }
+    totalExtraBLASBufferSize += mesh.v.size() * sizeof(glm::vec3);
+
     
-    extraBlasDatas.push_back(ExtraBLASData(mesh.indices,mesh.vn,mesh.vt));
+    extraBLASoffsets.push_back( mesh.indices.size());
+    for (const auto& indice :  mesh.indices)
+    {
+        inputArray.push_back(static_cast<float>(indice));
+    }
+    totalExtraBLASBufferSize += mesh.indices.size() * sizeof(glm::vec3);
 
-    extraBLASoffsets.push_back( mesh.indices.size() * sizeof(uint32_t));
-    totalExtraBLASBufferSize += extraBLASoffsets.back();
+    extraBLASoffsets.push_back( mesh.vn.size());
+    for (const auto& vn :  mesh.vn)
+    {
+        inputArray.push_back(vn.x);
+        inputArray.push_back(vn.y);
+        inputArray.push_back(vn.z);
+    }
+    totalExtraBLASBufferSize += mesh.vn.size() * sizeof(glm::vec3);
 
-    extraBLASoffsets.push_back( mesh.vn.size() * sizeof(glm::vec3));
-    totalExtraBLASBufferSize += extraBLASoffsets.back();
-
-    extraBLASoffsets.push_back( mesh.vt.size() * sizeof(glm::vec2));
-    totalExtraBLASBufferSize += extraBLASoffsets.back();
+    extraBLASoffsets.push_back( mesh.vt.size());
+    for (const auto& vt :  mesh.vt)
+    {
+        inputArray.push_back(vt.x);
+        inputArray.push_back(vt.y);
+    }
+    totalExtraBLASBufferSize += mesh.vt.size() * sizeof(glm::vec2);
     
     size += sizeof(float) * mesh.indices.size();
     

@@ -101,11 +101,11 @@ void vkUtil::SwapChainFrame::make_descriptors_resources(vkAccelerationStructure:
 	inputOffsets.size = sizeof(float) * vertexMenagerie->extraBLASoffsets.size();
 	inputOffsets.usage = VkBufferUsageFlagBits::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 	vkUtil::createBuffer(inputOffsets,offsets);
-	vkMapMemory(logicalDevice, offsets.bufferMemory, 0,  sizeof(size_t) * vertexMenagerie->extraBLASoffsets.size(), 0, &offsetsDataWriteLocation);
+	vkMapMemory(logicalDevice, offsets.bufferMemory, 0,  sizeof(float) * vertexMenagerie->extraBLASoffsets.size(), 0, &offsetsDataWriteLocation);
 	
 	offsetsBufferInfo.buffer = offsets.buffer;
 	offsetsBufferInfo.offset = 0;
-	offsetsBufferInfo.range = sizeof(size_t) * vertexMenagerie->extraBLASoffsets.size();
+	offsetsBufferInfo.range = sizeof(float) * vertexMenagerie->extraBLASoffsets.size();
 }
 
 void vkUtil::SwapChainFrame::write_descriptors(VkAccelerationStructureKHR handle, uint32_t size) {
@@ -195,12 +195,12 @@ void vkUtil::SwapChainFrame::write_descriptors(VkAccelerationStructureKHR handle
 	writeInfo8.descriptorType = VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 	writeInfo8.descriptorCount = 1;
 	writeInfo8.pBufferInfo = &offsetsBufferInfo;
-	writeInfo6.pNext = nullptr;
+	writeInfo8.pNext = nullptr;
 	
 	VkWriteDescriptorSet writeInfos[] = {writeInfo4, writeInfo5, writeInfo6,writeInfo7,writeInfo8};
 
 	
-	vkUpdateDescriptorSets(logicalDevice, 3, writeInfos, 0, nullptr);
+	vkUpdateDescriptorSets(logicalDevice, 5, writeInfos, 0, nullptr);
 	
 	VkDescriptorImageInfo imageDescriptor;
 

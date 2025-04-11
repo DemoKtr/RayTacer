@@ -35,9 +35,9 @@ void main() {
     const vec3 barycentricCoords = vec3(1.0f - attribs.x - attribs.y, attribs.x, attribs.y);
     uint primID = gl_PrimitiveID;
 
-    uint indicesOffset = offsets[3 * instanceIndex + 0];
-    uint normalsOffset = offsets[3 * instanceIndex + 1];
-    uint texCoordsOffset = offsets[3 * instanceIndex + 2];
+    uint indicesOffset = offsets[3 * instanceIndex + 1];
+    uint normalsOffset = offsets[3 * instanceIndex + 2];
+    uint texCoordsOffset = offsets[3 * instanceIndex + 3];
 
     uint i0 = uint(extraBLAS.data[indicesOffset + 3 * primID]);
     uint i1 = uint(extraBLAS.data[indicesOffset + 3 * primID + 1]);
@@ -53,7 +53,7 @@ void main() {
 
     // interpolate normals and texcoords based on barycentric coordinates
     vec3 normal = normalize(normal0 * barycentricCoords.x + normal1 * barycentricCoords.y + normal2 * barycentricCoords.z);
-vec3 texCoord = vec3(texCoord0 * barycentricCoords.x + texCoord1 * barycentricCoords.y + texCoord2 * barycentricCoords.z, 0.0);
+    vec3 texCoord = vec3(texCoord0 * barycentricCoords.x + texCoord1 * barycentricCoords.y + texCoord2 * barycentricCoords.z, 0.0);
     vec3 lightDir = normalize(vec3(light.position) - gl_WorldRayOriginEXT.xyz);
     vec3 viewDir = normalize(gl_WorldRayOriginEXT.xyz - gl_WorldRayDirectionEXT.xyz);
 
@@ -68,6 +68,11 @@ vec3 texCoord = vec3(texCoord0 * barycentricCoords.x + texCoord1 * barycentricCo
         material.shininess,
         material.ambientCoefficient
     );
+
+   // vec3 encodedTexCoord = texCoord * 0.5 + 0.5;
+   // vec3 encodedNormal = normal * 0.5 + 0.5;
+
+
 
     hitValue = finalColor;
 }

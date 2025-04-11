@@ -23,13 +23,6 @@ namespace vkAccelerationStructure {
 		VkQueue queue;
 		VkCommandBuffer commandBuffer;
 	};
-
-	struct  ExtraBLASData {
-		std::vector<uint32_t> indecies;
-		std::vector<glm::vec3> normals;
-		std::vector<glm::vec2> textCords;
-	};
-	
 	
 	class VertexMenagerie
 	{
@@ -51,8 +44,8 @@ namespace vkAccelerationStructure {
 		uint32_t size = 0;
 	
 		vkAccelerationStructure::AccelerationStructure  topLevelAS;
-		std::vector<ExtraBLASData> extraBlasDatas;
 		std::vector<uint32_t> extraBLASoffsets;
-		uint32_t totalExtraBLASBufferSize = 0; 
+		std::vector<float> inputArray;
+		size_t totalExtraBLASBufferSize = 0; 
 	};
 }

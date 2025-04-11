@@ -334,7 +334,7 @@ void GraphicsEngine::make_assets() {
 		}
 	}
 	
-	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/box.obj", "resources/models/box.mtl",glm::mat4(1.0f)),vkMatrix);
+	//accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/box.obj", "resources/models/box.mtl",glm::mat4(1.0f)),vkMatrix);
 	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/sphere.obj", "resources/models/sphere.mtl",glm::mat4(1.0f)),vkMatrix);
 
 	accelerationStructure->finalize(input, CommandPool, bufferSize);
@@ -378,7 +378,7 @@ void GraphicsEngine::create_frame_resources() {
 	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
 	vkInit::make_descriptor_pool(device, rayCastDescriptorPool, static_cast<uint32_t>(swapchainFrames.size()), bindings);
 
-	bindings.count = 5;
+	bindings.count = 7;
 	bindings.types[0] = VkDescriptorType::VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
 	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
@@ -424,7 +424,7 @@ void GraphicsEngine::create_descriptor_set_layouts() {
 	vkInit::make_descriptor_set_layout(device, bindings, rayCastDescriptorSetLayout);
 
 
-	bindings.count = 5;
+	bindings.count = 7;
 	
 	bindings.types[0] = VkDescriptorType::VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
 	bindings.stages[0] = (VkShaderStageFlagBits::VK_SHADER_STAGE_RAYGEN_BIT_KHR);
@@ -862,8 +862,8 @@ void GraphicsEngine::prepare_frame(uint32_t imageIndex) {
 	memcpy(_frame.materialDataWriteLocation, &(_frame.materialData), sizeof(vkUtil::Material));
 
 	
-	memcpy(_frame.normalsAndTextcordsDataWriteLocation, (accelerationStructure->extraBlasDatas.data()), accelerationStructure->totalExtraBLASBufferSize);
-	memcpy(_frame.offsetsDataWriteLocation, (accelerationStructure->extraBLASoffsets.data()),  sizeof(size_t) * accelerationStructure->extraBLASoffsets.size());
+	memcpy(_frame.normalsAndTextcordsDataWriteLocation, (accelerationStructure->inputArray.data()), accelerationStructure->totalExtraBLASBufferSize);
+	memcpy(_frame.offsetsDataWriteLocation, (accelerationStructure->extraBLASoffsets.data()),  sizeof(float) * accelerationStructure->extraBLASoffsets.size());
 	
 	_frame.write_descriptors(accelerationStructure->topLevelAS.handle, bufferSize);
 }
