@@ -22,33 +22,49 @@ void vkAccelerationStructure::VertexMenagerie::create_blas(vkAccelerationStructu
     extraBLASoffsets.push_back( mesh.v.size());
     for (const auto& v :  mesh.v)
     {
-        inputArray.push_back(v.x);
-        inputArray.push_back(v.y);
-        inputArray.push_back(v.z);
+        inputArray.push_back(glm::vec4(v.x,v.y,v.z,0));
     }
-    totalExtraBLASBufferSize += mesh.v.size() * sizeof(glm::vec3);
+    totalExtraBLASBufferSize +=mesh.v.size() * sizeof(glm::vec4);
 
     
-    extraBLASoffsets.push_back( mesh.indices.size());
-    for (const auto& indice :  mesh.indices)
+    extraBLASoffsets.push_back( mesh.indices.size()/3);
+    for (std::vector<float>::size_type i = 0; i < mesh.indices.size() - 3; i+=3)
     {
-        inputArray.push_back(static_cast<float>(indice));
+        glm::vec4 indice = glm::vec4(
+            mesh.indices[i+1],
+            mesh.indices[i+2],
+            mesh.indices[i+3],
+            0.0f
+        );
+        inputArray.push_back(indice);
     }
-    totalExtraBLASBufferSize += mesh.indices.size() * sizeof(glm::vec3);
+    totalExtraBLASBufferSize += mesh.indices.size()/3 * sizeof(glm::vec3);
 
-    extraBLASoffsets.push_back( mesh.normals.size());
-    for (const auto& normal :  mesh.normals)
+    extraBLASoffsets.push_back( mesh.normals.size()/3);
+    for (std::vector<float>::size_type i = 0; i < mesh.normals.size() - 3; i+=3)
     {
+        glm::vec4 normal = glm::vec4(
+            mesh.normals[i+1],
+            mesh.normals[i+2],
+            mesh.normals[i+3],
+            0.0f
+        );
         inputArray.push_back(normal);
     }
-    totalExtraBLASBufferSize += mesh.normals.size() * sizeof(glm::vec3);
+    totalExtraBLASBufferSize += mesh.normals.size()/3 * sizeof(glm::vec4);
 
-    extraBLASoffsets.push_back( mesh.uv.size());
-    for (const auto& uv :  mesh.uv)
+    extraBLASoffsets.push_back( mesh.uv.size()/2);
+    for (std::vector<float>::size_type i = 0; i < mesh.uv.size() - 3; i+=2)
     {
+        glm::vec4 uv = glm::vec4(
+            mesh.uv[i+1],
+            mesh.uv[i+2],
+            0.0f,
+            0.0f
+        );
         inputArray.push_back(uv);
     }
-    totalExtraBLASBufferSize += mesh.uv.size() * sizeof(glm::vec2);
+    totalExtraBLASBufferSize += mesh.uv.size()/2 * sizeof(glm::vec4);
     
     size += sizeof(float) * mesh.indices.size();
     

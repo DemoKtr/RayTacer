@@ -45,7 +45,7 @@ namespace vkAccelerationStructure {
 	
 		vkAccelerationStructure::AccelerationStructure  topLevelAS;
 		std::vector<uint32_t> extraBLASoffsets;
-		std::vector<float> inputArray;
+		std::vector<glm::vec4> inputArray;
 		size_t totalExtraBLASBufferSize = 0; 
 	};
 }
