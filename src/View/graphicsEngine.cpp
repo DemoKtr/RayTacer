@@ -278,6 +278,8 @@ void GraphicsEngine::create_pipeline() {
 	rayBuilder.specify_ray_gen_shader("resources/shaders/raygen.spv");
 	rayBuilder.specify_miss_shader("resources/shaders/miss.spv");
 	rayBuilder.specify_closest_hit_shader("resources/shaders/closesthit.spv");
+	rayBuilder.specify_all_hit_shader("resources/shaders/anyhit_shadow.spv");
+	rayBuilder.specify_miss_shader("resources/shaders/miss_shadow.spv");
 	output = rayBuilder.build(graphicsQueue,maincommandBuffer, raygenShaderBindingTable, missShaderBindingTable, hitShaderBindingTable);
 	pipeline.pipelineLayout = output.layout;
 	pipeline.pipeline = output.pipeline;
@@ -325,7 +327,9 @@ void GraphicsEngine::make_assets() {
 	glm::mat4 glmMatrix(1); // Assume this is your populated glm::mat4 matrix
 
 	VkTransformMatrixKHR vkMatrix;
+	glmMatrix = translate(glmMatrix, glm::vec3(-1,1,0));
 
+	
 	for(int i = 0; i < 3; i++)
 	{
 		for(int j = 0; j < 4; j++)
@@ -335,7 +339,18 @@ void GraphicsEngine::make_assets() {
 	}
 	
 	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/box.obj", "resources/models/box.mtl",glm::mat4(1.0f)),vkMatrix);
-	//accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/sphere.obj", "resources/models/sphere.mtl",glm::mat4(1.0f)),vkMatrix);
+
+	glmMatrix = translate(glmMatrix, glm::vec3(-1,1,0));
+	
+	for(int i = 0; i < 3; i++)
+	{
+		for(int j = 0; j < 4; j++)
+		{
+			vkMatrix.matrix[i][j] = glmMatrix[j][i]; // Note the swapped indices due to column-major vs row-major discrepancy
+		}
+	}
+	
+	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/sphere.obj", "resources/models/sphere.mtl",glm::mat4(1.0f)),vkMatrix);
 
 	accelerationStructure->finalize(input, CommandPool, bufferSize);
 }
@@ -427,7 +442,7 @@ void GraphicsEngine::create_descriptor_set_layouts() {
 	bindings.count = 7;
 	
 	bindings.types[0] = VkDescriptorType::VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
-	bindings.stages[0] = (VkShaderStageFlagBits::VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+	bindings.stages[0] = (VkShaderStageFlagBits::VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
 
 	bindings.indices.push_back(1);
 	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
@@ -852,7 +867,7 @@ void GraphicsEngine::prepare_frame(uint32_t imageIndex) {
 	_frame.uboData.inverseView = glm::inverse(view);
 	memcpy(_frame.uboDataWriteLocation, &(_frame.uboData), sizeof(vkUtil::UBO));
 
-	_frame.lightData.position = glm::vec4(1);
+	_frame.lightData.position = glm::vec4(10,-10,0,0);
 	_frame.lightData.intensity = glm::vec4(1);
 	memcpy(_frame.lightDataWriteLocation, &(_frame.lightData), sizeof(vkUtil::Light));
 

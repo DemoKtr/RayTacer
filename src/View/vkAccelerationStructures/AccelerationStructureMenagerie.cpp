@@ -59,7 +59,6 @@ void vkAccelerationStructure::VertexMenagerie::create_blas(vkAccelerationStructu
         extraBLASoffsets.back() + mesh.uv.size() / 2
     );
 
-    while (extraBLASoffsets.size() % 4 != 0) extraBLASoffsets.push_back(0);
 
     for (size_t i = 0; i < mesh.uv.size(); i += 2)
     {
@@ -318,6 +317,7 @@ void vkAccelerationStructure::VertexMenagerie::create_blas(vkAccelerationStructu
 void vkAccelerationStructure::VertexMenagerie::finalize(vkAccelerationStructure::FinalizationChunk finalizationChunk,
                                                         VkCommandPool commandPool, uint32_t &re) {
     re = size;
+    while (extraBLASoffsets.size() % 4 != 0) extraBLASoffsets.push_back(0);
     create_top_acceleration_structure(finalizationChunk.physicalDevice, finalizationChunk.commandBuffer,finalizationChunk.queue, commandPool);
 }
 void vkAccelerationStructure::VertexMenagerie::create_top_acceleration_structure(

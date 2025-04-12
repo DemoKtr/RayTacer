@@ -13,6 +13,8 @@ glslangValidator -V FinalImageFrag.frag -o frag.spv
 glslangValidator -V --target-env vulkan1.3 raygen.rgen -o raygen.spv
 glslangValidator -V --target-env vulkan1.3 miss.rmiss -o miss.spv
 glslangValidator -V --target-env vulkan1.3 closesthit.rchit -o closesthit.spv
+glslangValidator -V --target-env vulkan1.3 -S rahit anyhit_shadow.rahit -o anyhit_shadow.spv
+glslangValidator -V --target-env vulkan1.3 miss_shadow.rmiss -o miss_shadow.spv
 
 
 pause

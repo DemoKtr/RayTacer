@@ -21,7 +21,8 @@ namespace vkInit {
 
 		VkPushConstantRange pushConstantInfo;
 		int pushConstantCount = 0;
-		VkShaderModule rayGenShader = nullptr, missShader = nullptr, allHitShader = nullptr , closestHitShader = nullptr;
+		VkShaderModule rayGenShader = nullptr, allHitShader = nullptr , closestHitShader = nullptr;
+		std::vector<VkShaderModule> missShaders;
 		VkPipelineShaderStageCreateInfo rayGenShaderInfo, missShaderInfo, allHitShaderInfo, closestHitShaderInfo;
 		VkPipelineShaderStageCreateInfo make_shader_info(
 			const VkShaderModule& shaderModule, const VkShaderStageFlagBits& stage);

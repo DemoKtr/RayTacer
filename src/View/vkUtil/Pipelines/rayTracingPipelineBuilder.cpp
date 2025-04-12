@@ -195,14 +195,11 @@ void vkInit::RayTracingPipelineBuilder::specify_ray_gen_shader(const char* filen
 }
 
 void vkInit::RayTracingPipelineBuilder::specify_miss_shader(const char* filename) {
-	if (missShader) {
-		vkDestroyShaderModule(device, missShader, nullptr);
-		missShader = nullptr;
-	}
-
+	
+	missShaders.push_back(VkShaderModule{});
 	std::cout << "Create Miss shader module" << std::endl;
-	vkUtil::createModule(filename, device, missShader);
-	missShaderInfo = make_shader_info(missShader, VkShaderStageFlagBits::VK_SHADER_STAGE_MISS_BIT_KHR);
+	vkUtil::createModule(filename, device, missShaders.back());
+	missShaderInfo = make_shader_info(missShaders.back(), VkShaderStageFlagBits::VK_SHADER_STAGE_MISS_BIT_KHR);
 
 	shaderStages.push_back(missShaderInfo);
 
