@@ -7,6 +7,7 @@ namespace vkMesh {
 	class ObjMesh {
 	public:
 		std::vector<float> vertices;
+		std::vector<glm::vec3> vert;
 		std::vector<uint32_t> indices;
 		std::vector<glm::vec3> v, vn;
 		std::vector<glm::vec2> vt;

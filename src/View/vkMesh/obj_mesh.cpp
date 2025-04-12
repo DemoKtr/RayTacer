@@ -105,7 +105,7 @@ void vkMesh::ObjMesh::read_corner(const std::string& vertex_description) {
 	vertices.push_back(pos[1]);
 	vertices.push_back(pos[2]);
 
-
+	vert.push_back(glm::vec3(pos[0],pos[1],pos[2]));
 
 	glm::vec3 normal = vn[std::stol(v_vt_vn[2]) - 1];
 

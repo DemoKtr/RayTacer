@@ -334,8 +334,8 @@ void GraphicsEngine::make_assets() {
 		}
 	}
 	
-	//accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/box.obj", "resources/models/box.mtl",glm::mat4(1.0f)),vkMatrix);
-	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/sphere.obj", "resources/models/sphere.mtl",glm::mat4(1.0f)),vkMatrix);
+	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/box.obj", "resources/models/box.mtl",glm::mat4(1.0f)),vkMatrix);
+	//accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/sphere.obj", "resources/models/sphere.mtl",glm::mat4(1.0f)),vkMatrix);
 
 	accelerationStructure->finalize(input, CommandPool, bufferSize);
 }
