@@ -5,7 +5,7 @@ struct ShadowPayload {
     bool isVisible;
 };
 
-layout(location = 0) rayPayloadInEXT ShadowPayload shadowPayload;
+layout(location = 1) rayPayloadInEXT ShadowPayload shadowPayload;
 
 void main() {
     shadowPayload.isVisible = true;

@@ -45,11 +45,10 @@ bool isInShadow(vec3 point, vec3 lightPosition) {
     float tmax = length(lightPosition - point);
 
     // Perform ray tracing towards the light
-    hitValue = vec3(0.0);
     traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, point, tmin, directionToLight, tmax, 1);  // Use ray flag to detect shadow ray
 
     // If we hit something, we are in shadow
-    return hitValue == vec3(0.0);
+    return shadowPayload.isVisible;
 }
 
 void main() {
