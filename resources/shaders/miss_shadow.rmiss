@@ -8,5 +8,5 @@ struct ShadowPayload {
 layout(location = 1) rayPayloadInEXT ShadowPayload shadowPayload;
 
 void main() {
-    shadowPayload.isVisible = true;
+    shadowPayload.isVisible = false;
 }

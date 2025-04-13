@@ -8,6 +8,6 @@ struct ShadowPayload {
 layout(location = 1) rayPayloadInEXT ShadowPayload shadowPayload;
 
 void main() {
-    shadowPayload.isVisible = false;
+    shadowPayload.isVisible = true;
     ignoreIntersectionEXT;
 }
