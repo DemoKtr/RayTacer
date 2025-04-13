@@ -41,10 +41,11 @@ vec3 CalculatePhongLighting(vec3 lightDir, vec4 lightIntensity,
 // Shadow checking function
 bool isInShadow(vec3 point, vec3 lightPosition) {
     vec3 directionToLight = normalize(lightPosition - point);
-    float tmin = 0.001;  // Small offset to avoid self-intersection
+    float tmin = 0.01;  // Small offset to avoid self-intersection
     float tmax = length(lightPosition - point);
 
     // Perform ray tracing towards the light
+    shadowPayload.isVisible = false;
     traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, point, tmin, directionToLight, tmax, 1);  // Use ray flag to detect shadow ray
 
     // If we hit something, we are in shadow
@@ -74,13 +75,15 @@ void main() {
 
     vec3 normal = normalize(normal0 * barycentricCoords.x + normal1 * barycentricCoords.y + normal2 * barycentricCoords.z);
     vec3 texCoord = vec3(texCoord0 * barycentricCoords.x + texCoord1 * barycentricCoords.y + texCoord2 * barycentricCoords.z, 0.0);
-    vec3 lightDir = normalize(vec3(light.position) - gl_WorldRayOriginEXT.xyz);
+    vec3 worldPos = gl_WorldRayOriginEXT + gl_HitTEXT * gl_WorldRayDirectionEXT;
+
+    vec3 lightDir = normalize(vec3(light.position) - worldPos);
     vec3 viewDir = normalize(gl_WorldRayOriginEXT.xyz - gl_WorldRayDirectionEXT.xyz);
 
     vec3 objectColor = texture(imageAtlas, texCoord).rgb;
 
     // Check if the hit point is in shadow
-    bool shadowed = isInShadow(gl_WorldRayOriginEXT.xyz, light.position.xyz);
+    bool shadowed = isInShadow(worldPos, light.position.xyz);
 
     // If the point is shadowed, reduce the light intensity to zero (darkened)
     vec3 finalColor = CalculatePhongLighting(

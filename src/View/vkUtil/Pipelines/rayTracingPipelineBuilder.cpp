@@ -82,6 +82,8 @@ void vkInit::RayTracingPipelineBuilder::create_shader_groups(VkPipeline pipeline
 
 	// ----- Miss SBT -----
 	// Dla miss shader – offset o jeden uchwyt (handleStride)
+	inputChunk.size = handleSize*2;
+
 	inputChunk.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 	inputChunk.memoryProperties = hostMemoryFlags;
 	vkUtil::createBuffer(inputChunk, stagingBuffer);
@@ -106,7 +108,7 @@ void vkInit::RayTracingPipelineBuilder::create_shader_groups(VkPipeline pipeline
 	vkUtil::createBuffer(inputChunk, stagingBuffer);
 
 	vkMapMemory(device, stagingBuffer.bufferMemory, 0, inputChunk.size, 0, &hitMemoryLocation);
-	memcpy(hitMemoryLocation, shaderHandleStorage.data() + handleSizeAligned * 2, inputChunk.size);
+	memcpy(hitMemoryLocation, shaderHandleStorage.data() + handleSizeAligned * 3, inputChunk.size);
 	vkUnmapMemory(device, stagingBuffer.bufferMemory);
 
 	inputChunk.usage = bufferUsageFlags;
