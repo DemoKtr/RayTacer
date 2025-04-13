@@ -10,11 +10,7 @@ layout(binding = 2, set = 0) uniform CameraProperties
 } cam;
 
 layout(location = 0) rayPayloadEXT vec3 hitValue;
-struct ShadowPayload {
-    bool isVisible;
-};
 
-layout(location = 1) rayPayloadEXT ShadowPayload shadowPayload;
 // Number of samples for supersampling
 const int NUM_SAMPLES = 8;
 

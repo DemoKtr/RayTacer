@@ -41,12 +41,13 @@ vec3 CalculatePhongLighting(vec3 lightDir, vec4 lightIntensity,
 // Shadow checking function
 bool isInShadow(vec3 point, vec3 lightPosition) {
     vec3 directionToLight = normalize(lightPosition - point);
-    float tmin = 0.01;  // Small offset to avoid self-intersection
+    float tmin = 0.001;  // Small offset to avoid self-intersection
     float tmax = length(lightPosition - point);
 
     // Perform ray tracing towards the light
     shadowPayload.isVisible = false;
-    traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, point, tmin, directionToLight, tmax, 1);  // Use ray flag to detect shadow ray
+    traceRayEXT(topLevelAS,  gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsSkipClosestHitShaderEXT, 0xff, 1, 2, 1, point, tmin, directionToLight, tmax, 1);  // Use ray flag to detect shadow ray
+
 
     // If we hit something, we are in shadow
     return shadowPayload.isVisible;
