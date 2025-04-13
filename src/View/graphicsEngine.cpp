@@ -275,7 +275,7 @@ void GraphicsEngine::create_pipeline() {
 	vkInit::RayTracingPipelineBuilder rayBuilder(physicalDevice,device);
 	rayBuilder.add_descriptor_set_layout(rayGenDescriptorSetLayout);
 	rayBuilder.add_descriptor_set_layout(textureDescriptorSetLayout);
-	rayBuilder.specify_ray_gen_shader("resources/shaders/raygen.spv");
+	rayBuilder.specify_ray_gen_shader("resources/shaders/raygen.spv",1);
 	rayBuilder.specify_miss_shader("resources/shaders/miss.spv");
 	rayBuilder.specify_miss_shader("resources/shaders/miss_shadow.spv");
 	rayBuilder.specify_closest_hit_shader("resources/shaders/closesthit.spv");
@@ -285,6 +285,20 @@ void GraphicsEngine::create_pipeline() {
 	pipeline.pipeline = output.pipeline;
 	
 	vkResources::scenePipelines->addPipeline("Ray", pipeline);
+
+	vkInit::RayTracingPipelineBuilder rayPBRBuilder(physicalDevice, device);
+	rayPBRBuilder.add_descriptor_set_layout(rayGenDescriptorSetLayout);
+	rayPBRBuilder.add_descriptor_set_layout(textureDescriptorSetLayout);
+	rayPBRBuilder.specify_ray_gen_shader("resources/shaders/rg.spv",4);
+	rayPBRBuilder.specify_miss_shader("resources/shaders/m.spv");
+	rayPBRBuilder.specify_miss_shader("resources/shaders/miss_shadow.spv");
+	rayPBRBuilder.specify_closest_hit_shader("resources/shaders/ch.spv");
+	//rayBuilder.specify_all_hit_shader("resources/shaders/anyhit_shadow.spv");
+	output = rayPBRBuilder.build(graphicsQueue, maincommandBuffer, raygenShaderBindingTablePBR, missShaderBindingTablePBR, hitShaderBindingTablePBR);
+	pipeline.pipelineLayout = output.layout;
+	pipeline.pipeline = output.pipeline;
+
+	vkResources::scenePipelines->addPipeline("RayPBR", pipeline);
 }
 
 void GraphicsEngine::finalize_setup() {
@@ -301,8 +315,8 @@ void GraphicsEngine::make_assets() {
 	vkInit::make_descriptor_pool(device,textureDescriptorPool ,static_cast<uint32_t>(2), bindings);
 
 	std::vector<std::string> texturesNames;
-	texturesNames.push_back("resources/textures/g1.jpg");
-	texturesNames.push_back("resources/textures/g2.jpg");
+	texturesNames.push_back("resources/textures/black.png");
+	
 
 	vkImage::TextureInputChunk inputTexture;
 	inputTexture.logicalDevice = device;
@@ -351,7 +365,7 @@ void GraphicsEngine::make_assets() {
 		}
 	}
 	
-	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/box.obj", "resources/models/box.mtl",glm::mat4(1.0f)),vkMatrix);
+	//accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/sphere1.obj", "resources/models/sphere1.mtl",glm::mat4(1.0f)),vkMatrix);
 
 	accelerationStructure->finalize(input, CommandPool, bufferSize);
 }
@@ -510,7 +524,11 @@ void GraphicsEngine::record_draw_command(VkCommandBuffer commandBuffer, uint32_t
 		VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, // lub inny odpowiedni etap
 		0, 0, NULL, 0, NULL, 1, &barrier
 	);
-	vkUtil::PipelineCacheChunk pipelineInfo = vkResources::scenePipelines->getPipeline("Ray");
+	vkUtil::PipelineCacheChunk pipelineInfo;
+	if(!PBR)
+	pipelineInfo = vkResources::scenePipelines->getPipeline("Ray");
+	else
+	pipelineInfo = vkResources::scenePipelines->getPipeline("RayPBR");
 
 	VkPhysicalDeviceRayTracingPipelinePropertiesKHR rtProps{};
 	rtProps.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR;
@@ -527,19 +545,30 @@ void GraphicsEngine::record_draw_command(VkCommandBuffer commandBuffer, uint32_t
 
 
 	VkStridedDeviceAddressRegionKHR raygenShaderSbtEntry{};
-	raygenShaderSbtEntry.deviceAddress = vkUtil::getBufferDeviceAddress(device, raygenShaderBindingTable.buffer);
+	//raygenShaderSbtEntry.deviceAddress = vkUtil::getBufferDeviceAddress(device, raygenShaderBindingTable.buffer);
 	raygenShaderSbtEntry.stride = handleSizeAligned;
 	raygenShaderSbtEntry.size = handleSizeAligned;
 
 	VkStridedDeviceAddressRegionKHR missShaderSbtEntry{};
-	missShaderSbtEntry.deviceAddress = vkUtil::getBufferDeviceAddress(device, missShaderBindingTable.buffer);
+	//missShaderSbtEntry.deviceAddress = vkUtil::getBufferDeviceAddress(device, missShaderBindingTable.buffer);
 	missShaderSbtEntry.stride = handleSizeAligned;
 	missShaderSbtEntry.size = handleSizeAligned;
 
 	VkStridedDeviceAddressRegionKHR hitShaderSbtEntry{};
-	hitShaderSbtEntry.deviceAddress = vkUtil::getBufferDeviceAddress(device, hitShaderBindingTable.buffer);
+	//hitShaderSbtEntry.deviceAddress = vkUtil::getBufferDeviceAddress(device, hitShaderBindingTable.buffer);
 	hitShaderSbtEntry.stride = handleSizeAligned;
 	hitShaderSbtEntry.size = handleSizeAligned;
+
+	if (PBR) {
+		hitShaderSbtEntry.deviceAddress = vkUtil::getBufferDeviceAddress(device, hitShaderBindingTablePBR.buffer);
+		missShaderSbtEntry.deviceAddress = vkUtil::getBufferDeviceAddress(device, missShaderBindingTablePBR.buffer);
+		raygenShaderSbtEntry.deviceAddress = vkUtil::getBufferDeviceAddress(device, raygenShaderBindingTablePBR.buffer);
+	}
+	else {
+		hitShaderSbtEntry.deviceAddress = vkUtil::getBufferDeviceAddress(device, hitShaderBindingTable.buffer);
+		missShaderSbtEntry.deviceAddress = vkUtil::getBufferDeviceAddress(device, missShaderBindingTable.buffer);
+		raygenShaderSbtEntry.deviceAddress = vkUtil::getBufferDeviceAddress(device, raygenShaderBindingTable.buffer);
+	}
 
 	VkStridedDeviceAddressRegionKHR callableShaderSbtEntry{};
 	
@@ -637,7 +666,7 @@ void GraphicsEngine::record_draw_command(VkCommandBuffer commandBuffer, uint32_t
 		nullptr             // pDynamicOffsets
 	);
 
-	// Rysowanie: 6 wierzcho³ków, 1 instancja, start indeksu 0, start vertex 0
+
 	vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 
 	// Zakoñczenie renderowania dynamicznego

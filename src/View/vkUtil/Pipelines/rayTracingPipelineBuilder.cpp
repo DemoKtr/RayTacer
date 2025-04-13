@@ -177,7 +177,7 @@ void vkInit::RayTracingPipelineBuilder::make_pipeline_layout(VkPipelineLayout& p
 	}
 }
 
-void vkInit::RayTracingPipelineBuilder::specify_ray_gen_shader(const char* filename) {
+void vkInit::RayTracingPipelineBuilder::specify_ray_gen_shader(const char* filename, uint32_t maxRecursive) {
 	if (rayGenShader) {
 		vkDestroyShaderModule(device, rayGenShader, nullptr);
 		rayGenShader = nullptr;
@@ -186,10 +186,16 @@ void vkInit::RayTracingPipelineBuilder::specify_ray_gen_shader(const char* filen
 	std::cout << "Create RayGen shader module" << std::endl;
 	vkUtil::createModule(filename, device, rayGenShader);
 	rayGenShaderInfo = make_shader_info(rayGenShader, VkShaderStageFlagBits::VK_SHADER_STAGE_RAYGEN_BIT_KHR);
-	
+	recursive = maxRecursive;
 	shaderStages.push_back(rayGenShaderInfo);
-
-
+	specializationMapEntry.constantID = 0;
+	specializationMapEntry.offset = 0;
+	specializationMapEntry.size = sizeof(uint32_t);
+	specializationInfo.mapEntryCount = 1;
+	specializationInfo.pMapEntries = &specializationMapEntry;
+	specializationInfo.dataSize = sizeof(recursive);
+	specializationInfo.pData = &recursive;
+	shaderStages.back().pSpecializationInfo = &specializationInfo;
 	VkRayTracingShaderGroupCreateInfoKHR shaderGroup{};
 	shaderGroup.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR;
 	shaderGroup.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR;
@@ -280,7 +286,7 @@ vkUtil::GraphicsPipelineOutBundle vkInit::RayTracingPipelineBuilder::build(VkQue
 	rayTracingPipelineCI.pStages = shaderStages.data();
 	rayTracingPipelineCI.groupCount = static_cast<uint32_t>(shaderGroups.size());
 	rayTracingPipelineCI.pGroups = shaderGroups.data();
-	rayTracingPipelineCI.maxPipelineRayRecursionDepth = 1;
+	rayTracingPipelineCI.maxPipelineRayRecursionDepth = recursive;
 	rayTracingPipelineCI.layout = pipelineLayout;
 	VkPipeline pipeline;
 

@@ -31,13 +31,18 @@ namespace vkInit {
 		
 		
 	public:
+		uint32_t recursive;
+		VkSpecializationInfo specializationInfo = {};
+		VkSpecializationMapEntry specializationMapEntry = {};
+
+
 		void* gemMemoryLocation = nullptr;
 		void* missMemoryLocation = nullptr;
 		void* hitMemoryLocation = nullptr;
 		RayTracingPipelineBuilder(VkPhysicalDevice physicalDevice,VkDevice device);
 		~RayTracingPipelineBuilder();
 		void make_pipeline_layout(VkPipelineLayout& pipelineLayout);
-		void specify_ray_gen_shader(const char* filename);
+		void specify_ray_gen_shader(const char* filename, uint32_t maxRecursive);
 		void specify_miss_shader(const char* filename);
 		void specify_closest_hit_shader(const char* filename);
 		void specify_all_hit_shader(const char* filename);

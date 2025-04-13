@@ -71,10 +71,15 @@ class GraphicsEngine {
 	vkAccelerationStructure::VertexMenagerie *accelerationStructure;
 
 	Buffer hitShaderBindingTable;
+	Buffer hitShaderBindingTablePBR;
 	Buffer missShaderBindingTable;
+	Buffer missShaderBindingTablePBR;
 	Buffer raygenShaderBindingTable;
+	Buffer raygenShaderBindingTablePBR;
 
 	vkImage::Texture* textures;
+
+	bool PBR = true;
 
 	void make_instance(); //instance Setup
 	void choice_device();
