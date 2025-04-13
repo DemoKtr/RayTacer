@@ -7,7 +7,7 @@ using namespace std;
 int main()
 {
 	
-	App* myApp = new App(1920,1080, true);
+	App* myApp = new App(680,480, true);
 	myApp->run();
 	delete myApp;
 	

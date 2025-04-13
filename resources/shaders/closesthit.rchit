@@ -36,26 +36,26 @@ layout(set = 0, binding = 6) readonly buffer ExtraBLASOffsets {
 vec3 CalculatePhongLighting(vec3 lightDir, vec4 lightIntensity,
                             vec3 normal, vec3 viewDir,
                             vec3 objectColor, float shininess,
-                            float ambientCoefficient);
+                            float ambientCoefficient, vec3 worldPos);
 
 // Shadow checking function
-bool isInShadow(vec3 point, vec3 lightPosition) {
+void isInShadow(vec3 point, vec3 lightPosition) {
     vec3 directionToLight = normalize(lightPosition - point);
-    float tmin = 0.001;  // Small offset to avoid self-intersection
+    float tmin = 0.1f;  // Small offset to avoid self-intersection
     float tmax = length(lightPosition - point);
+	shadowPayload.isVisible = true;
+    traceRayEXT(
+    topLevelAS,
+    gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT, 
+	0xFF, 
+	0, 
+	0, 
+	1,
+    point, tmin, directionToLight, tmax, 1
+);
 
-    // Perform ray tracing towards the light
-    traceRayEXT(topLevelAS,  
-            gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsSkipClosestHitShaderEXT,  
-            0xff,
-            1,  // Hit group 4
-            1,
-            1,  // Miss shader index 1
-            point, tmin, directionToLight, tmax, 1);
-
-
-    // If we hit something, we are in shadow
-    return shadowPayload.isVisible;
+	
+    
 }
 
 void main() {
@@ -83,32 +83,37 @@ void main() {
     vec3 texCoord = vec3(texCoord0 * barycentricCoords.x + texCoord1 * barycentricCoords.y + texCoord2 * barycentricCoords.z, 0.0);
     vec3 worldPos = gl_WorldRayOriginEXT + gl_HitTEXT * gl_WorldRayDirectionEXT;
 
-    vec3 lightDir = normalize(vec3(light.position) - worldPos);
-    vec3 viewDir = normalize(gl_WorldRayOriginEXT.xyz - gl_WorldRayDirectionEXT.xyz);
+    vec3 lightDir = normalize(light.position.xyz - worldPos);
+    vec3 viewDir = normalize(gl_WorldRayOriginEXT - worldPos);
 
     vec3 objectColor = texture(imageAtlas, texCoord).rgb;
-
+	
     // Check if the hit point is in shadow
-    bool shadowed = isInShadow(worldPos, light.position.xyz);
+    //bool shadowed = 
 
-    // If the point is shadowed, reduce the light intensity to zero (darkened)
+
     vec3 finalColor = CalculatePhongLighting(
         lightDir,
-        shadowed ? vec4(0.0) : light.intensity,
+        light.intensity,
         normal,
         viewDir,
         objectColor,
         material.shininess,
-        material.ambientCoefficient
+        material.ambientCoefficient,
+		worldPos
     );
 
     hitValue = finalColor;
+	//isInShadow(worldPos, light.position.xyz);
+	isInShadow(worldPos, light.position.xyz);
+	if(shadowPayload.isVisible) hitValue = material.ambientCoefficient * objectColor;
+	
 }
 
 vec3 CalculatePhongLighting(vec3 lightDir, vec4 lightIntensity,
                             vec3 normal, vec3 viewDir, 
                             vec3 objectColor, float shininess, 
-                            float ambientCoefficient) 
+                            float ambientCoefficient, vec3 worldPos) 
 {
     float diffuseFactor = max(dot(normal, lightDir), 0.0);
 
@@ -119,5 +124,12 @@ vec3 CalculatePhongLighting(vec3 lightDir, vec4 lightIntensity,
     vec3 diffuse = diffuseFactor * objectColor;
     vec3 specular = specFactor * vec3(lightIntensity);
 
+	float distance    = length(light.position.xyz - worldPos);
+	float attenuation = 1.0 / (1.0f + 0.09f * distance + 
+    		    0.032f * (distance * distance));    
+
+	//ambient *= attenuation;
+	diffuse *= attenuation;
+	specular *= attenuation;
     return ambient + diffuse + specular;
 }

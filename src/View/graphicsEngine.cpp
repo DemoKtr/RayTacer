@@ -279,7 +279,7 @@ void GraphicsEngine::create_pipeline() {
 	rayBuilder.specify_miss_shader("resources/shaders/miss.spv");
 	rayBuilder.specify_miss_shader("resources/shaders/miss_shadow.spv");
 	rayBuilder.specify_closest_hit_shader("resources/shaders/closesthit.spv");
-	rayBuilder.specify_all_hit_shader("resources/shaders/anyhit_shadow.spv");
+	//rayBuilder.specify_all_hit_shader("resources/shaders/anyhit_shadow.spv");
 	output = rayBuilder.build(graphicsQueue,maincommandBuffer, raygenShaderBindingTable, missShaderBindingTable, hitShaderBindingTable);
 	pipeline.pipelineLayout = output.layout;
 	pipeline.pipeline = output.pipeline;
@@ -301,7 +301,8 @@ void GraphicsEngine::make_assets() {
 	vkInit::make_descriptor_pool(device,textureDescriptorPool ,static_cast<uint32_t>(2), bindings);
 
 	std::vector<std::string> texturesNames;
-	texturesNames.push_back("resources/textures/diffuse.png");
+	texturesNames.push_back("resources/textures/g1.jpg");
+	texturesNames.push_back("resources/textures/g2.jpg");
 
 	vkImage::TextureInputChunk inputTexture;
 	inputTexture.logicalDevice = device;
@@ -337,7 +338,7 @@ void GraphicsEngine::make_assets() {
 			vkMatrix.matrix[i][j] = glmMatrix[j][i]; // Note the swapped indices due to column-major vs row-major discrepancy
 		}
 	}
-	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/sphere.obj", "resources/models/sphere.mtl",glm::mat4(1.0f)),vkMatrix);
+	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/sphere1.obj", "resources/models/sphere1.mtl",glm::mat4(1.0f)),vkMatrix);
 
 
 	glmMatrix = translate(glmMatrix, glm::vec3(-2,0,0));
@@ -861,19 +862,19 @@ void GraphicsEngine::prepare_frame(uint32_t imageIndex) {
 	glm::mat4 view = glm::lookAt(eye, center, up);
 
 	glm::mat4 projection = glm::perspective(glm::radians(45.0f), static_cast<float>(swapchainExtent.width) / static_cast<float>(swapchainExtent.height), 0.1f, 1024.0f);
-	//projection[1][1] *= -1;
+	projection[1][1] *= -1;
 
 	_frame.uboData.inverseProj = glm::inverse(projection);
 	_frame.uboData.inverseView = glm::inverse(view);
 	memcpy(_frame.uboDataWriteLocation, &(_frame.uboData), sizeof(vkUtil::UBO));
 
-	_frame.lightData.position = glm::vec4(2,0,0,0);
-	_frame.lightData.intensity = glm::vec4(1);
+	_frame.lightData.position = glm::vec4(4,2,0,1);
+	_frame.lightData.intensity = glm::vec4(.4f);
 	memcpy(_frame.lightDataWriteLocation, &(_frame.lightData), sizeof(vkUtil::Light));
-
+	
 	_frame.materialData.color = glm::vec3(0.1);
-	_frame.materialData.shininess =  1.0f;
-	_frame.materialData.ambientCoefficient = 0.5f;
+	_frame.materialData.shininess =  0.5f;
+	_frame.materialData.ambientCoefficient = 0.35f;
 	memcpy(_frame.materialDataWriteLocation, &(_frame.materialData), sizeof(vkUtil::Material));
 
 	

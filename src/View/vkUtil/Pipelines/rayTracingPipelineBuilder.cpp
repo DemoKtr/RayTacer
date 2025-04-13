@@ -30,7 +30,11 @@ void vkInit::RayTracingPipelineBuilder::create_shader_groups(VkPipeline pipeline
 	const uint32_t handleSizeAligned = alignedSize(rtProps.shaderGroupHandleSize, rtProps.shaderGroupHandleAlignment);
 	const uint32_t groupCount = static_cast<uint32_t>(shaderGroups.size());
 	const uint32_t sbtSize = groupCount * handleSizeAligned;
-
+	std::cout << shaderGroups.size() << std::endl;
+	std::cout << shaderGroups.size() << std::endl;
+	std::cout << shaderGroups.size() << std::endl;
+	std::cout << shaderGroups.size() << std::endl;
+	std::cout << shaderGroups.size() << std::endl;
 	// Rezerwujemy pamięć na uchwyty shaderów
 	std::vector<uint8_t> shaderHandleStorage(sbtSize);
 
@@ -82,14 +86,14 @@ void vkInit::RayTracingPipelineBuilder::create_shader_groups(VkPipeline pipeline
 
 	// ----- Miss SBT -----
 	// Dla miss shader – offset o jeden uchwyt (handleStride)
-	inputChunk.size = handleSize*2;
+	inputChunk.size = handleSize *2;
 
 	inputChunk.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 	inputChunk.memoryProperties = hostMemoryFlags;
 	vkUtil::createBuffer(inputChunk, stagingBuffer);
 
 	vkMapMemory(device, stagingBuffer.bufferMemory, 0, inputChunk.size, 0, &missMemoryLocation);
-	memcpy(missMemoryLocation, shaderHandleStorage.data() + handleSizeAligned, inputChunk.size);
+	memcpy(missMemoryLocation, shaderHandleStorage.data() + handleSizeAligned, handleSize * 2);
 	vkUnmapMemory(device, stagingBuffer.bufferMemory);
 
 	inputChunk.usage = bufferUsageFlags;
@@ -105,10 +109,11 @@ void vkInit::RayTracingPipelineBuilder::create_shader_groups(VkPipeline pipeline
 	// Dla hit shader – offset o dwa uchwyty (handleStride * 2)
 	inputChunk.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 	inputChunk.memoryProperties = hostMemoryFlags;
+	inputChunk.size = handleSize;
 	vkUtil::createBuffer(inputChunk, stagingBuffer);
 
 	vkMapMemory(device, stagingBuffer.bufferMemory, 0, inputChunk.size, 0, &hitMemoryLocation);
-	memcpy(hitMemoryLocation, shaderHandleStorage.data() + handleSizeAligned * 3, inputChunk.size);
+	memcpy(hitMemoryLocation, shaderHandleStorage.data() + handleSizeAligned * 3, handleSize);
 	vkUnmapMemory(device, stagingBuffer.bufferMemory);
 
 	inputChunk.usage = bufferUsageFlags;
@@ -278,9 +283,7 @@ vkUtil::GraphicsPipelineOutBundle vkInit::RayTracingPipelineBuilder::build(VkQue
 	rayTracingPipelineCI.maxPipelineRayRecursionDepth = 1;
 	rayTracingPipelineCI.layout = pipelineLayout;
 	VkPipeline pipeline;
-	std::cout << static_cast<uint32_t>(shaderGroups.size()) << std::endl;;
-	std::cout << static_cast<uint32_t>(shaderGroups.size()) << std::endl;;
-	std::cout << static_cast<uint32_t>(shaderGroups.size()) << std::endl;;
+
 	PFN_vkCreateRayTracingPipelinesKHR vkCreateRayTracingPipelinesKHR;
 	vkCreateRayTracingPipelinesKHR = (PFN_vkCreateRayTracingPipelinesKHR)(vkGetDeviceProcAddr(device, "vkCreateRayTracingPipelinesKHR"));
 

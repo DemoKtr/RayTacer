@@ -12,7 +12,7 @@ layout(binding = 2, set = 0) uniform CameraProperties
 layout(location = 0) rayPayloadEXT vec3 hitValue;
 
 // Number of samples for supersampling
-const int NUM_SAMPLES = 8;
+const int NUM_SAMPLES =16;
 
 void main() 
 {
