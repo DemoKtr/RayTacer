@@ -1,6 +1,6 @@
 # Blender 4.3.2
 # www.blender.org
-mtllib Plane.mtl
+mtllib Plane5.mtl
 o Cube.001
 v -0.643493 0.247846 5.629984
 v -0.643493 6.205687 5.629984
