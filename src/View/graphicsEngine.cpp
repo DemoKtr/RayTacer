@@ -315,7 +315,7 @@ void GraphicsEngine::make_assets() {
 	vkInit::make_descriptor_pool(device,textureDescriptorPool ,static_cast<uint32_t>(2), bindings);
 
 	std::vector<std::string> texturesNames;
-	texturesNames.push_back("resources/textures/black.png");
+	texturesNames.push_back("resources/textures/diffuse.png");
 	
 
 	vkImage::TextureInputChunk inputTexture;
@@ -359,6 +359,7 @@ void GraphicsEngine::make_assets() {
 	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/Plane2.obj", "resources/models/sphere1.mtl",glm::mat4(1.0f)),vkMatrix);
 	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/Plane3.obj", "resources/models/sphere1.mtl",glm::mat4(1.0f)),vkMatrix);
 	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/Plane4.obj", "resources/models/sphere1.mtl",glm::mat4(1.0f)),vkMatrix);
+	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/Plane5.obj", "resources/models/sphere1.mtl",glm::mat4(1.0f)),vkMatrix);
 
 	
 	//accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/sphere1.obj", "resources/models/sphere1.mtl",glm::mat4(1.0f)),vkMatrix);
@@ -894,7 +895,7 @@ void GraphicsEngine::record_raytracing_command(VkCommandBuffer commandBuffer, ui
 void GraphicsEngine::prepare_frame(uint32_t imageIndex) {
 	vkUtil::SwapChainFrame& _frame = swapchainFrames[imageIndex];
 
-	glm::vec3 eye = { 0.0f, 0.0f, -10.0f };
+	glm::vec3 eye = { 0.0f, 0.8f, 2.5f };
 	glm::vec3 center = { 0.0f, 0.0f, 0.0f };
 	glm::vec3 up = { 0.0f, 1.0f, 0.0f };
 	glm::mat4 view = glm::lookAt(eye, center, up);

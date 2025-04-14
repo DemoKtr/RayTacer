@@ -101,7 +101,7 @@ void main() {
 	// Objects with full white vertex color are treated as reflectors
 	if((objectColor.r == 1.0f) && (objectColor.g == 1.0f) && (objectColor.b == 1.0f))
 	rayPayload.reflector = 1.0f;
-	else if((objectColor.r < .3f) && (objectColor.g < .3f) && (objectColor.b < .3f)) {
+	else if((objectColor.r < .0f) && (objectColor.g < .0f) && (objectColor.b < .0f)) {
 	rayPayload.reflector = 0.5f;
 	rayPayload.color = vec3(1.0f,1.0f,1.0f);
 	}
