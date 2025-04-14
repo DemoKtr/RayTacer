@@ -352,7 +352,16 @@ void GraphicsEngine::make_assets() {
 			vkMatrix.matrix[i][j] = glmMatrix[j][i]; // Note the swapped indices due to column-major vs row-major discrepancy
 		}
 	}
-	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/sphere1.obj", "resources/models/sphere1.mtl",glm::mat4(1.0f)),vkMatrix);
+	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/Cube1.obj", "resources/models/sphere1.mtl",glm::mat4(1.0f)),vkMatrix);
+	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/Cube2.obj", "resources/models/sphere1.mtl",glm::mat4(1.0f)),vkMatrix);
+	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/Plane.obj", "resources/models/sphere1.mtl",glm::mat4(1.0f)),vkMatrix);
+	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/Plane1.obj", "resources/models/sphere1.mtl",glm::mat4(1.0f)),vkMatrix);
+	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/Plane2.obj", "resources/models/sphere1.mtl",glm::mat4(1.0f)),vkMatrix);
+	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/Plane3.obj", "resources/models/sphere1.mtl",glm::mat4(1.0f)),vkMatrix);
+	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/Plane4.obj", "resources/models/sphere1.mtl",glm::mat4(1.0f)),vkMatrix);
+
+	
+	//accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/sphere1.obj", "resources/models/sphere1.mtl",glm::mat4(1.0f)),vkMatrix);
 
 
 	glmMatrix = translate(glmMatrix, glm::vec3(-2,0,0));
@@ -365,7 +374,7 @@ void GraphicsEngine::make_assets() {
 		}
 	}
 	
-	//accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/sphere1.obj", "resources/models/sphere1.mtl",glm::mat4(1.0f)),vkMatrix);
+	//accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/sphere.obj", "resources/models/sphere.mtl",glm::mat4(1.0f)),vkMatrix);
 
 	accelerationStructure->finalize(input, CommandPool, bufferSize);
 }
