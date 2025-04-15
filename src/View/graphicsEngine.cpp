@@ -385,7 +385,8 @@ void GraphicsEngine::make_assets() {
 			vkMatrix.matrix[i][j] = glmMatrix[j][i]; // Note the swapped indices due to column-major vs row-major discrepancy
 		}
 	}
-	glm::vec4 in = glm::vec4(0,0,0,0);
+	//glm::vec4 in = glm::vec4(0,0,0,0);
+	glm::vec4 in = glm::vec4(18, 19, 20, 21);
 	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/c1.obj", "resources/models/sphere1.mtl",glm::mat4(1.0f)),vkMatrix,in);
 	in = glm::vec4(1, 0, 0, 0);
 	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/c2.obj", "resources/models/sphere1.mtl",glm::mat4(1.0f)),vkMatrix,in);
@@ -959,7 +960,7 @@ void GraphicsEngine::prepare_frame(uint32_t imageIndex) {
 	_frame.uboData.inverseView = glm::inverse(view);
 	memcpy(_frame.uboDataWriteLocation, &(_frame.uboData), sizeof(vkUtil::UBO));
 
-	_frame.lightData.position = glm::vec4(-2,4.5f,1,1);
+	_frame.lightData.position = glm::vec4(-2,4.5f,-1,1);
 	_frame.lightData.intensity = glm::vec4(255);
 	memcpy(_frame.lightDataWriteLocation, &(_frame.lightData), sizeof(vkUtil::Light));
 	

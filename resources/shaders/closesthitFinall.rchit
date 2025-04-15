@@ -128,8 +128,8 @@ vec3 calculatePBR(
 }
 
 vec2 ParallaxMapping(vec2 texCoords, vec3 viewDir, float dispIndex) { 
-    float numLayers = 32.0;
-    float parallaxScale = 0.1;
+    float numLayers = 128.0;
+    float parallaxScale = 0.5;
     float layerDepth = 1.0 / numLayers;
     
     vec2 deltaUV = (viewDir.xy * parallaxScale) / (viewDir.z * numLayers + 0.001);
@@ -202,21 +202,22 @@ void main() {
     vec3 T = tangentInterp;
     vec3 N = normalInterp;
     T = normalize(T - dot(T, N) * N); // ortogonalizacja
+	//float handedness = -1.0f;
     vec3 B =   cross(N, T);
     mat3 TBN = mat3(T, B, N);
     
-    vec3 viewDir = normalize(gl_WorldRayOriginEXT - worldPos);
-    //vec3 viewDirTangent = transpose(TBN) * viewDir;
-    //uv = ParallaxMapping(uv, viewDirTangent, textureIndices.w);
     
-    vec3 albedo = texture(imageAtlas, vec3(uv, textureIndices.x)).rgb;
     
     if(textureIndices.y > 0.1f) {
         vec3 sampledNormal = texture(imageAtlas, vec3(uv, textureIndices.y)).rgb;
         sampledNormal = normalize(sampledNormal * 2.0 - 1.0); // przekształcenie z [0,1] do [-1,1]
         N = normalize(TBN * sampledNormal);
     }
+    vec3 viewDir = normalize(gl_WorldRayOriginEXT - worldPos);
+    vec3 viewDirTangent = transpose(TBN) * viewDir;
+    uv = ParallaxMapping(uv, viewDirTangent, textureIndices.w);
     
+    vec3 albedo = texture(imageAtlas, vec3(uv, textureIndices.x)).rgb;
     vec3 loadARM = texture(imageAtlas, vec3(uv, textureIndices.z)).rgb;
     float ao = loadARM.r;
     float roughness = loadARM.g;

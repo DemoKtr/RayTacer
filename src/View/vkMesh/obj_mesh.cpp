@@ -128,7 +128,7 @@ glm::vec3 vkMesh::ObjMesh::readBtangent(const std::string& first_vertex_descript
 
 
 
-	tangent = glm::normalize(tangent);
+	tangent = tangent;
 	return tangent;
 }
 
