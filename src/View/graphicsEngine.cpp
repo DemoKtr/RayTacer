@@ -315,8 +315,41 @@ void GraphicsEngine::make_assets() {
 	vkInit::make_descriptor_pool(device,textureDescriptorPool ,static_cast<uint32_t>(2), bindings);
 
 	std::vector<std::string> texturesNames;
-	texturesNames.push_back("resources/textures/diffuse.png");
 	
+	texturesNames.push_back("resources/textures/white1.png");
+	texturesNames.push_back("resources/textures/black.png");
+	
+	// color normal arm dissplacement
+	texturesNames.push_back("resources/textures/groundDiff.png");
+	texturesNames.push_back("resources/textures/groundNormal.png");
+	texturesNames.push_back("resources/textures/groundARM.png");
+	texturesNames.push_back("resources/textures/groundDiss.png");
+
+	texturesNames.push_back("resources/textures/floorDiff.png");
+	texturesNames.push_back("resources/textures/floorNormal.png");
+	texturesNames.push_back("resources/textures/floorARM.png");
+	texturesNames.push_back("resources/textures/floorDiss.png");
+
+	texturesNames.push_back("resources/textures/metalDiff.png");
+	texturesNames.push_back("resources/textures/metalNormal.png");
+	texturesNames.push_back("resources/textures/metalARM.png");
+	texturesNames.push_back("resources/textures/metalDiss.png");
+
+	texturesNames.push_back("resources/textures/rockDiff.png");
+	texturesNames.push_back("resources/textures/rockNormal.png");
+	texturesNames.push_back("resources/textures/rockARM.png");
+	texturesNames.push_back("resources/textures/rockDiss.png");
+
+	texturesNames.push_back("resources/textures/stoneDiff.png");
+	texturesNames.push_back("resources/textures/stoneNormal.png");
+	texturesNames.push_back("resources/textures/stoneARM.png");
+	texturesNames.push_back("resources/textures/stoneDiss.png");
+
+	texturesNames.push_back("resources/textures/woodDiff.png");
+	texturesNames.push_back("resources/textures/woodNormal.png");
+	texturesNames.push_back("resources/textures/woodARM.png");
+	texturesNames.push_back("resources/textures/woodDiss.png");
+
 
 	vkImage::TextureInputChunk inputTexture;
 	inputTexture.logicalDevice = device;
@@ -352,14 +385,22 @@ void GraphicsEngine::make_assets() {
 			vkMatrix.matrix[i][j] = glmMatrix[j][i]; // Note the swapped indices due to column-major vs row-major discrepancy
 		}
 	}
-	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/Cube1.obj", "resources/models/sphere1.mtl",glm::mat4(1.0f)),vkMatrix);
-	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/Cube2.obj", "resources/models/sphere1.mtl",glm::mat4(1.0f)),vkMatrix);
-	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/Plane.obj", "resources/models/sphere1.mtl",glm::mat4(1.0f)),vkMatrix);
-	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/Plane1.obj", "resources/models/sphere1.mtl",glm::mat4(1.0f)),vkMatrix);
-	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/Plane2.obj", "resources/models/sphere1.mtl",glm::mat4(1.0f)),vkMatrix);
-	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/Plane3.obj", "resources/models/sphere1.mtl",glm::mat4(1.0f)),vkMatrix);
-	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/Plane4.obj", "resources/models/sphere1.mtl",glm::mat4(1.0f)),vkMatrix);
-	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/Plane5.obj", "resources/models/sphere1.mtl",glm::mat4(1.0f)),vkMatrix);
+	glm::vec4 in = glm::vec4(0,0,0,0);
+	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/c1.obj", "resources/models/sphere1.mtl",glm::mat4(1.0f)),vkMatrix,in);
+	in = glm::vec4(1, 0, 0, 0);
+	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/c2.obj", "resources/models/sphere1.mtl",glm::mat4(1.0f)),vkMatrix,in);
+	in = glm::vec4(2, 3, 4, 5);
+	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/Plane.obj", "resources/models/sphere1.mtl",glm::mat4(1.0f)),vkMatrix, in);
+	in = glm::vec4(6, 7, 8, 9);
+	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/Plane1.obj", "resources/models/sphere1.mtl",glm::mat4(1.0f)),vkMatrix, in);
+	in = glm::vec4(10, 11, 12, 13);
+	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/Plane2.obj", "resources/models/sphere1.mtl",glm::mat4(1.0f)),vkMatrix, in);
+	in = glm::vec4(14, 15,16, 17);
+	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/Plane3.obj", "resources/models/sphere1.mtl",glm::mat4(1.0f)),vkMatrix, in);
+	in = glm::vec4(18, 19, 20, 21);
+	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/Plane4.obj", "resources/models/sphere1.mtl",glm::mat4(1.0f)),vkMatrix, in);
+	in = glm::vec4(22, 23, 24, 25);
+	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/Plane5.obj", "resources/models/sphere1.mtl",glm::mat4(1.0f)),vkMatrix, in);
 
 	
 	//accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/sphere1.obj", "resources/models/sphere1.mtl",glm::mat4(1.0f)),vkMatrix);
@@ -895,9 +936,20 @@ void GraphicsEngine::record_raytracing_command(VkCommandBuffer commandBuffer, ui
 void GraphicsEngine::prepare_frame(uint32_t imageIndex) {
 	vkUtil::SwapChainFrame& _frame = swapchainFrames[imageIndex];
 
-	glm::vec3 eye = { 0.0f, 0.8f, 2.5f };
-	glm::vec3 center = { 0.0f, 0.0f, 0.0f };
+	glm::vec3 eye = { -5.0f, 4.0f, 1.0f }; // sta³a pozycja kamery
+	float angle = glfwGetTime(); // obrót w czasie
+	float distance = .5f ; // odleg³oœæ na jak¹ patrzy kamera od swojego œrodka
+
+	glm::vec3 direction = {
+		cos(angle) * distance,
+		0.0f,
+		sin(angle) * distance
+	};
+
+	//glm::vec3 center = eye + direction;
+	glm::vec3 center = { 0.0f, 4.0f, 0.0f };
 	glm::vec3 up = { 0.0f, 1.0f, 0.0f };
+
 	glm::mat4 view = glm::lookAt(eye, center, up);
 
 	glm::mat4 projection = glm::perspective(glm::radians(45.0f), static_cast<float>(swapchainExtent.width) / static_cast<float>(swapchainExtent.height), 0.1f, 1024.0f);
@@ -907,8 +959,8 @@ void GraphicsEngine::prepare_frame(uint32_t imageIndex) {
 	_frame.uboData.inverseView = glm::inverse(view);
 	memcpy(_frame.uboDataWriteLocation, &(_frame.uboData), sizeof(vkUtil::UBO));
 
-	_frame.lightData.position = glm::vec4(4,2,0,1);
-	_frame.lightData.intensity = glm::vec4(.4f);
+	_frame.lightData.position = glm::vec4(-2,4.5f,1,1);
+	_frame.lightData.intensity = glm::vec4(255);
 	memcpy(_frame.lightDataWriteLocation, &(_frame.lightData), sizeof(vkUtil::Light));
 	
 	_frame.materialData.color = glm::vec3(0.1);

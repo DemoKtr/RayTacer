@@ -13,10 +13,12 @@ vkAccelerationStructure::VertexMenagerie::~VertexMenagerie() {}
 
 
 
-void vkAccelerationStructure::VertexMenagerie::create_blas(vkAccelerationStructure::FinalizationChunk finalizationChunk,vkMesh::ObjMesh mesh,VkTransformMatrixKHR transformMatrix) {
+void vkAccelerationStructure::VertexMenagerie::create_blas(vkAccelerationStructure::FinalizationChunk finalizationChunk,vkMesh::ObjMesh mesh,VkTransformMatrixKHR transformMatrix,glm::vec4 textureIndices) {
     Buffer vertexBuffer, indexBuffer,uvBuffer, transformBuffer;
     bottomLevelASes.push_back(vkAccelerationStructure::AccelerationStructure {});
     transformMatrixes.push_back(transformMatrix);
+    // color normal arm dissplacement
+
     if(extraBLASoffsets.size() == 0) {
         extraBLASoffsets.push_back(0);
     }
@@ -36,7 +38,7 @@ void vkAccelerationStructure::VertexMenagerie::create_blas(vkAccelerationStructu
             mesh.indices[i],
             mesh.indices[i + 1],
             mesh.indices[i + 2],
-            0.0f
+            textureIndices.w
         );
         inputArray.push_back(indice);
     }
@@ -49,7 +51,7 @@ void vkAccelerationStructure::VertexMenagerie::create_blas(vkAccelerationStructu
             mesh.normals[i],
             mesh.normals[i+1],
             mesh.normals[i+2],
-            0.0f
+            textureIndices.z
         );
         inputArray.push_back(normal);
     }
@@ -65,13 +67,29 @@ void vkAccelerationStructure::VertexMenagerie::create_blas(vkAccelerationStructu
         glm::vec4 uv = glm::vec4(
             mesh.uv[i],
             mesh.uv[i + 1],
-            0.0f,  // X, Y, a Z i W = 0
-            0.0f
+            textureIndices.x,
+            textureIndices.y
         );
         inputArray.push_back(uv);
     }
 
     totalExtraBLASBufferSize += mesh.uv.size() / 2 * sizeof(glm::vec4);
+
+
+    extraBLASoffsets.push_back(extraBLASoffsets.back() + mesh.tangents.size() / 3);
+    for (std::vector<float>::size_type i = 0; i < mesh.tangents.size(); i += 3)
+    {
+        glm::vec4 normal = glm::vec4(
+            mesh.tangents[i],
+            mesh.tangents[i + 1],
+            mesh.tangents[i + 2],
+            1.0f
+        );
+        inputArray.push_back(normal);
+    }
+    totalExtraBLASBufferSize += mesh.tangents.size() / 3 * sizeof(glm::vec4);
+
+
     
     size += sizeof(float) * mesh.indices.size();
     

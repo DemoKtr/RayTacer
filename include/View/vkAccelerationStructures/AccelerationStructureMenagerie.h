@@ -33,7 +33,7 @@ namespace vkAccelerationStructure {
 		VertexMenagerie();
 		~VertexMenagerie();
 
-		void create_blas(vkAccelerationStructure::FinalizationChunk finalizationChunk,vkMesh::ObjMesh mesh,VkTransformMatrixKHR transformMatrix);
+		void create_blas(vkAccelerationStructure::FinalizationChunk finalizationChunk,vkMesh::ObjMesh mesh,VkTransformMatrixKHR transformMatrix, glm::vec4 textureIndices);
 		
 		void finalize(FinalizationChunk finalizationChunk, VkCommandPool commandPool,uint32_t& re);
 		void create_top_acceleration_structure(VkPhysicalDevice physicalDevice,VkCommandBuffer commandBuffer, VkQueue queue, VkCommandPool commandPool);

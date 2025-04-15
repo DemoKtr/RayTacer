@@ -21,7 +21,7 @@ layout(location = 0) rayPayloadEXT RayPayload rayPayload;
 // Number of samples for supersampling
 const int NUM_SAMPLES =8;
 
-layout (constant_id = 0) const int MAX_RECURSION = 4;
+layout (constant_id = 0) const int MAX_RECURSION = 6;
 void main() 
 {
     const vec2 pixelCenter = vec2(gl_LaunchIDEXT.xy) + vec2(0.5);
@@ -46,40 +46,41 @@ void main()
 		if (rayPayload.distance < 0.0f) {
 			color += hitColor;
 			break;
-		} else if (rayPayload.reflector == 1.0f) {
+		} 
+		else if (rayPayload.reflector == 1.0f) {
 			const vec4 hitPos = origin + direction * rayPayload.distance;
 			origin.xyz = hitPos.xyz + rayPayload.normal * 0.001f;
 			direction.xyz = reflect(direction.xyz, rayPayload.normal);
 		} 
 		else if (abs(rayPayload.reflector - 0.5f) < 0.001f) {
 		// Wylicz punkt trafienia
-    const vec4 hitPos = origin + direction * rayPayload.distance;
+			const vec4 hitPos = origin + direction * rayPayload.distance;
 
-    // Normalizacja wektorów
-    vec3 normDir = normalize(direction.xyz);
-    vec3 normNormal = normalize(rayPayload.normal);
+		// Normalizacja wektorów
+			vec3 normDir = normalize(direction.xyz);
+			vec3 normNormal = normalize(rayPayload.normal);
 
-    // Czy uderzyliśmy od zewnątrz (powietrze -> szkło) czy od środka (szkło -> powietrze)?
-    bool frontFace = dot(normDir, normNormal) < 0.0;
-    vec3 adjustedNormal = frontFace ? normNormal : -normNormal;
+		// Czy uderzyliśmy od zewnątrz (powietrze -> szkło) czy od środka (szkło -> powietrze)?
+			bool frontFace = dot(normDir, normNormal) < 0.0;
+			vec3 adjustedNormal = frontFace ? normNormal : -normNormal;
 
-    // Współczynnik załamania – szkło ma ok. 1.5
-    float eta = frontFace ? (1.0f / 1.5f) : (1.5f / 1.0f);
+		// Współczynnik załamania – szkło ma ok. 1.5
+			float eta = frontFace ? (1.0f / 1.5f) : (1.5f / 1.0f);
 
-    // Wylicz kierunek załamania
-    vec3 refractedDir = refract(normDir, adjustedNormal, eta);
+		// Wylicz kierunek załamania
+			vec3 refractedDir = refract(normDir, adjustedNormal, eta);
 
-    // Przesuń origin wgłąb (w kierunku refrakcji lub refleksji), by uniknąć samo-przecięcia
-    if (length(refractedDir) < 0.001f) {
-        // Całkowite wewnętrzne odbicie
-        direction.xyz = reflect(normDir, adjustedNormal);
-        origin.xyz = hitPos.xyz + adjustedNormal * 0.001f;
-    } else {
-        // Udało się załamać
-        direction.xyz = refractedDir;
-        origin.xyz = hitPos.xyz - adjustedNormal * 0.001f;
-    }
+		// Przesuń origin wgłąb (w kierunku refrakcji lub refleksji), by uniknąć samo-przecięcia
+		if (length(refractedDir) < 0.001f) {
+			// Całkowite wewnętrzne odbicie
+			direction.xyz = reflect(normDir, adjustedNormal);
+			origin.xyz = hitPos.xyz + adjustedNormal * 0.001f;
+		} else {
+			// Udało się załamać
+			direction.xyz = refractedDir;
+			origin.xyz = hitPos.xyz - adjustedNormal * 0.001f;
 		}
+	}
 		
 		else {
 			color += hitColor;
