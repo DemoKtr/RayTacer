@@ -5,7 +5,7 @@
 A Vulkan-based ray tracer implementing physically-based rendering techniques.  
 This project was developed for the course *Fotorealistyczna Grafika Komputerowa* (Photorealistic Computer Graphics) at Lodz University of Technology.
 
-## ✨ Features
+##  Features
 
 - **Physically Based Rendering (PBR):** Simulates realistic material interactions with light.
 - **Refraction and Reflection:** Handles transparent materials and reflective surfaces accurately.
