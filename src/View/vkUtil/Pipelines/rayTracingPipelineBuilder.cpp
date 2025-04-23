@@ -25,20 +25,24 @@ void vkInit::RayTracingPipelineBuilder::create_shader_groups(VkPipeline pipeline
 	deviceProps2.pNext = &rtProps;
 	vkGetPhysicalDeviceProperties2(physicalDevice, &deviceProps2);
 
-	// Obliczamy wyrównanie uchwytów
+	// Obliczamy wyrÃ³wnanie uchwytÃ³w
 	const uint32_t handleSize = rtProps.shaderGroupHandleSize;
 	const uint32_t handleSizeAligned = alignedSize(rtProps.shaderGroupHandleSize, rtProps.shaderGroupHandleAlignment);
 	const uint32_t groupCount = static_cast<uint32_t>(shaderGroups.size());
 	const uint32_t sbtSize = groupCount * handleSizeAligned;
-
-	// Rezerwujemy pamiêæ na uchwyty shaderów
+	std::cout << shaderGroups.size() << std::endl;
+	std::cout << shaderGroups.size() << std::endl;
+	std::cout << shaderGroups.size() << std::endl;
+	std::cout << shaderGroups.size() << std::endl;
+	std::cout << shaderGroups.size() << std::endl;
+	// Rezerwujemy pamiÄ™Ä‡ na uchwyty shaderÃ³w
 	std::vector<uint8_t> shaderHandleStorage(sbtSize);
 
-	// Pobieramy wskaŸnik do funkcji ray tracingu
+	// Pobieramy wskaÅºnik do funkcji ray tracingu
 	PFN_vkGetRayTracingShaderGroupHandlesKHR pfnGetRTShaderGroupHandles =
 		(PFN_vkGetRayTracingShaderGroupHandlesKHR)vkGetDeviceProcAddr(device, "vkGetRayTracingShaderGroupHandlesKHR");
 	if (!pfnGetRTShaderGroupHandles) {
-		throw std::runtime_error("Nie uda³o siê pobraæ wskaŸnika vkGetRayTracingShaderGroupHandlesKHR");
+		throw std::runtime_error("Nie udaÅ‚o siÄ™ pobraÄ‡ wskaÅºnika vkGetRayTracingShaderGroupHandlesKHR");
 	}
 	VkResult result = pfnGetRTShaderGroupHandles(device, pipeline, 0, static_cast<uint32_t>(shaderGroups.size()), sbtSize, shaderHandleStorage.data());
 	if (result != VK_SUCCESS) std::cout << "kurwa" << std::endl;
@@ -47,13 +51,13 @@ void vkInit::RayTracingPipelineBuilder::create_shader_groups(VkPipeline pipeline
 		VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 	const VkMemoryPropertyFlags hostMemoryFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
-	// Przygotowujemy strukturê wejœciow¹ do tworzenia buforów
+	// Przygotowujemy strukturÄ™ wejÅ›ciowÄ… do tworzenia buforÃ³w
 	BufferInputChunk inputChunk = {};
 	inputChunk.logicalDevice = device;
 	inputChunk.physicalDevice = physicalDevice;
 	inputChunk.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 	inputChunk.memoryProperties = hostMemoryFlags;
-	// Kopiujemy tylko "u¿yteczn¹" czêœæ uchwytu
+	// Kopiujemy tylko "uÅ¼ytecznÄ…" czÄ™Å›Ä‡ uchwytu
 	inputChunk.size = handleSize;
 
 	Buffer stagingBuffer;
@@ -68,7 +72,7 @@ void vkInit::RayTracingPipelineBuilder::create_shader_groups(VkPipeline pipeline
 	memcpy(gemMemoryLocation, shaderHandleStorage.data(), inputChunk.size);
 	vkUnmapMemory(device, stagingBuffer.bufferMemory);
 
-	// Tworzymy docelowy bufor raygen z pamiêci¹ DEVICE_LOCAL
+	// Tworzymy docelowy bufor raygen z pamiÄ™ciÄ… DEVICE_LOCAL
 	inputChunk.usage = bufferUsageFlags;
 	inputChunk.memoryProperties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 	vkUtil::createBuffer(inputChunk, raygenShaderBindingTable);
@@ -81,13 +85,15 @@ void vkInit::RayTracingPipelineBuilder::create_shader_groups(VkPipeline pipeline
 	vkFreeMemory(device, stagingBuffer.bufferMemory, nullptr);
 
 	// ----- Miss SBT -----
-	// Dla miss shader – offset o jeden uchwyt (handleStride)
+	// Dla miss shader â€“ offset o jeden uchwyt (handleStride)
+	inputChunk.size = handleSize *2;
+
 	inputChunk.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 	inputChunk.memoryProperties = hostMemoryFlags;
 	vkUtil::createBuffer(inputChunk, stagingBuffer);
 
 	vkMapMemory(device, stagingBuffer.bufferMemory, 0, inputChunk.size, 0, &missMemoryLocation);
-	memcpy(missMemoryLocation, shaderHandleStorage.data() + handleSizeAligned, inputChunk.size);
+	memcpy(missMemoryLocation, shaderHandleStorage.data() + handleSizeAligned, handleSize * 2);
 	vkUnmapMemory(device, stagingBuffer.bufferMemory);
 
 	inputChunk.usage = bufferUsageFlags;
@@ -100,13 +106,14 @@ void vkInit::RayTracingPipelineBuilder::create_shader_groups(VkPipeline pipeline
 	vkFreeMemory(device, stagingBuffer.bufferMemory, nullptr);
 
 	// ----- Hit SBT -----
-	// Dla hit shader – offset o dwa uchwyty (handleStride * 2)
+	// Dla hit shader â€“ offset o dwa uchwyty (handleStride * 2)
 	inputChunk.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 	inputChunk.memoryProperties = hostMemoryFlags;
+	inputChunk.size = handleSize;
 	vkUtil::createBuffer(inputChunk, stagingBuffer);
 
 	vkMapMemory(device, stagingBuffer.bufferMemory, 0, inputChunk.size, 0, &hitMemoryLocation);
-	memcpy(hitMemoryLocation, shaderHandleStorage.data() + handleSizeAligned * 2, inputChunk.size);
+	memcpy(hitMemoryLocation, shaderHandleStorage.data() + handleSizeAligned * 3, handleSize);
 	vkUnmapMemory(device, stagingBuffer.bufferMemory);
 
 	inputChunk.usage = bufferUsageFlags;
@@ -170,7 +177,7 @@ void vkInit::RayTracingPipelineBuilder::make_pipeline_layout(VkPipelineLayout& p
 	}
 }
 
-void vkInit::RayTracingPipelineBuilder::specify_ray_gen_shader(const char* filename) {
+void vkInit::RayTracingPipelineBuilder::specify_ray_gen_shader(const char* filename, uint32_t maxRecursive) {
 	if (rayGenShader) {
 		vkDestroyShaderModule(device, rayGenShader, nullptr);
 		rayGenShader = nullptr;
@@ -179,10 +186,16 @@ void vkInit::RayTracingPipelineBuilder::specify_ray_gen_shader(const char* filen
 	std::cout << "Create RayGen shader module" << std::endl;
 	vkUtil::createModule(filename, device, rayGenShader);
 	rayGenShaderInfo = make_shader_info(rayGenShader, VkShaderStageFlagBits::VK_SHADER_STAGE_RAYGEN_BIT_KHR);
-	
+	recursive = maxRecursive;
 	shaderStages.push_back(rayGenShaderInfo);
-
-
+	specializationMapEntry.constantID = 0;
+	specializationMapEntry.offset = 0;
+	specializationMapEntry.size = sizeof(uint32_t);
+	specializationInfo.mapEntryCount = 1;
+	specializationInfo.pMapEntries = &specializationMapEntry;
+	specializationInfo.dataSize = sizeof(recursive);
+	specializationInfo.pData = &recursive;
+	shaderStages.back().pSpecializationInfo = &specializationInfo;
 	VkRayTracingShaderGroupCreateInfoKHR shaderGroup{};
 	shaderGroup.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR;
 	shaderGroup.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR;
@@ -195,14 +208,11 @@ void vkInit::RayTracingPipelineBuilder::specify_ray_gen_shader(const char* filen
 }
 
 void vkInit::RayTracingPipelineBuilder::specify_miss_shader(const char* filename) {
-	if (missShader) {
-		vkDestroyShaderModule(device, missShader, nullptr);
-		missShader = nullptr;
-	}
-
+	
+	missShaders.push_back(VkShaderModule{});
 	std::cout << "Create Miss shader module" << std::endl;
-	vkUtil::createModule(filename, device, missShader);
-	missShaderInfo = make_shader_info(missShader, VkShaderStageFlagBits::VK_SHADER_STAGE_MISS_BIT_KHR);
+	vkUtil::createModule(filename, device, missShaders.back());
+	missShaderInfo = make_shader_info(missShaders.back(), VkShaderStageFlagBits::VK_SHADER_STAGE_MISS_BIT_KHR);
 
 	shaderStages.push_back(missShaderInfo);
 
@@ -276,12 +286,10 @@ vkUtil::GraphicsPipelineOutBundle vkInit::RayTracingPipelineBuilder::build(VkQue
 	rayTracingPipelineCI.pStages = shaderStages.data();
 	rayTracingPipelineCI.groupCount = static_cast<uint32_t>(shaderGroups.size());
 	rayTracingPipelineCI.pGroups = shaderGroups.data();
-	rayTracingPipelineCI.maxPipelineRayRecursionDepth = 1;
+	rayTracingPipelineCI.maxPipelineRayRecursionDepth = recursive;
 	rayTracingPipelineCI.layout = pipelineLayout;
 	VkPipeline pipeline;
-	std::cout << static_cast<uint32_t>(shaderGroups.size()) << std::endl;;
-	std::cout << static_cast<uint32_t>(shaderGroups.size()) << std::endl;;
-	std::cout << static_cast<uint32_t>(shaderGroups.size()) << std::endl;;
+
 	PFN_vkCreateRayTracingPipelinesKHR vkCreateRayTracingPipelinesKHR;
 	vkCreateRayTracingPipelinesKHR = (PFN_vkCreateRayTracingPipelinesKHR)(vkGetDeviceProcAddr(device, "vkCreateRayTracingPipelinesKHR"));
 

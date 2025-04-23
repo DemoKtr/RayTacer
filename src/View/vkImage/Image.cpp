@@ -23,10 +23,11 @@ void vkImage::make_image(ImageInputChunk input) {
 	} VkImageCreateInfo;
 	*/
 
-	VkImageCreateInfo imageInfo;
+	VkImageCreateInfo imageInfo{};
+	imageInfo.sType = VkStructureType::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 	imageInfo.flags = VkImageCreateFlagBits() | input.flags;
 	if (input.height > 1)
-		imageInfo.imageType = VkImageType::VK_IMAGE_TYPE_2D;
+	imageInfo.imageType = VkImageType::VK_IMAGE_TYPE_2D;
 	else imageInfo.imageType = VkImageType::VK_IMAGE_TYPE_1D;
 	imageInfo.extent = VkExtent3D(input.width, input.height, 1);
 	imageInfo.mipLevels = 1;
@@ -37,20 +38,25 @@ void vkImage::make_image(ImageInputChunk input) {
 	imageInfo.usage = input.usage;
 	imageInfo.sharingMode = VkSharingMode::VK_SHARING_MODE_EXCLUSIVE;
 	imageInfo.samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
-	
-	vkCreateImage(input.logicalDevice, &imageInfo, nullptr, &input.image);
+	imageInfo.pNext = nullptr;
+	VkResult result = vkCreateImage(input.logicalDevice, &imageInfo, nullptr, input.image);
+	if (result != VK_SUCCESS) {
+		std::cerr << "vkCreateImage error: " << result << std::endl;
+		// Dalsza obs³uga b³êdu
+	}
 	
 }
 
 VkDeviceMemory vkImage::make_image_memory(ImageInputChunk input, VkImage image) {
-	VkMemoryRequirements requirements; vkGetImageMemoryRequirements(input.logicalDevice, input.image, &requirements);
+	VkMemoryRequirements requirements; vkGetImageMemoryRequirements(input.logicalDevice, *input.image, &requirements);
 
-	VkMemoryAllocateInfo allocation;
+	VkMemoryAllocateInfo allocation{};
+	allocation.sType = VkStructureType::VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	allocation.allocationSize = requirements.size;
 	allocation.memoryTypeIndex = vkUtil::findMemoryTypeIndex(
 		input.physicalDevice, requirements.memoryTypeBits, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
 	);
-
+	allocation.pNext = nullptr;
 	
 		VkDeviceMemory imageMemory;
 		vkAllocateMemory(input.logicalDevice, &allocation, nullptr, &imageMemory);
@@ -92,7 +98,8 @@ void vkImage::transition_image_layout(ImageLayoutTransitionJob job) {
 		VkImageSubresourceRange    subresourceRange;
 	} VkImageMemoryBarrier;
 	*/
-	VkImageMemoryBarrier barrier;
+	VkImageMemoryBarrier barrier{};
+	barrier.sType = VkStructureType::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
 	barrier.oldLayout = job.oldLayout;
 	barrier.newLayout = job.newLayout;
 	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;

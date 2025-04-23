@@ -11,41 +11,41 @@ layout(binding = 2, set = 0) uniform CameraProperties
 
 layout(location = 0) rayPayloadEXT vec3 hitValue;
 
-// Stała określająca liczbę próbek na piksel
-const int NUM_SAMPLES = 8;
+// Number of samples for supersampling
+const int NUM_SAMPLES =16;
 
 void main() 
 {
     vec3 finalColor = vec3(0.0);
     
-    // Supersampling – wystrzeliwanie kilku promieni per piksel
+    // Supersampling – shoot several rays per pixel
     for (int i = 0; i < NUM_SAMPLES; i++) {
-        // Generujemy niewielki offset (jitter) dla podpikseli
+        // Generate jitter for subpixel sampling
         vec2 jitter = vec2(fract(sin(float(i) * 12.9898) * 43758.5453), fract(sin(float(i) * 78.233) * 43758.5453));
         vec2 pixelCenter = vec2(gl_LaunchIDEXT.xy) + jitter;
         vec2 inUV = pixelCenter / vec2(gl_LaunchSizeEXT.xy);
         vec2 d = inUV * 2.0 - 1.0;
 
-        // Obliczanie promienia
+        // Compute the ray origin and direction
         vec4 origin = cam.viewInverse * vec4(0, 0, 0, 1);
         vec4 target = cam.projInverse * vec4(d.x, d.y, 1, 1);
         vec4 direction = cam.viewInverse * vec4(normalize(target.xyz), 0);
-
+		direction = normalize(direction);
         float tmin = 0.001;
         float tmax = 10000.0;
         
         hitValue = vec3(0.0);
         
-        // Ray tracing dla próbki
+        // Ray tracing for the sample
         traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT, 0xff, 0, 0, 0, origin.xyz, tmin, direction.xyz, tmax, 0);
         
-        // Akumulacja koloru
+        // Accumulate color
         finalColor += hitValue;
     }
 
-    // Uśrednianie koloru
+    // Average the color for all samples
     finalColor /= float(NUM_SAMPLES);
 
-    // Zapis do tekstury
+    // Write to the image
     imageStore(image, ivec2(gl_LaunchIDEXT.xy), vec4(finalColor, 1.0));
 }

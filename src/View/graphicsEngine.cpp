@@ -15,9 +15,8 @@
 #include <glm/glm.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
+
 #include "View/vkMesh/obj_mesh.h"
-
-
 
 
 GraphicsEngine::GraphicsEngine(GLFWwindow* window, int width, int height, bool debugMode) {
@@ -37,13 +36,13 @@ GraphicsEngine::GraphicsEngine(GLFWwindow* window, int width, int height, bool d
 	create_swapchain();
 	create_descriptor_set_layouts();
 	create_frame_command_buffer();
+	
+	make_assets();
+
 	create_pipeline();
 
 	
 	finalize_setup();
-
-	make_assets();
-
 }
 
 void GraphicsEngine::render() {
@@ -275,14 +274,31 @@ void GraphicsEngine::create_pipeline() {
 	
 	vkInit::RayTracingPipelineBuilder rayBuilder(physicalDevice,device);
 	rayBuilder.add_descriptor_set_layout(rayGenDescriptorSetLayout);
-	rayBuilder.specify_ray_gen_shader("resources/shaders/raygen.spv");
+	rayBuilder.add_descriptor_set_layout(textureDescriptorSetLayout);
+	rayBuilder.specify_ray_gen_shader("resources/shaders/raygen.spv",1);
 	rayBuilder.specify_miss_shader("resources/shaders/miss.spv");
+	rayBuilder.specify_miss_shader("resources/shaders/miss_shadow.spv");
 	rayBuilder.specify_closest_hit_shader("resources/shaders/closesthit.spv");
+	//rayBuilder.specify_all_hit_shader("resources/shaders/anyhit_shadow.spv");
 	output = rayBuilder.build(graphicsQueue,maincommandBuffer, raygenShaderBindingTable, missShaderBindingTable, hitShaderBindingTable);
 	pipeline.pipelineLayout = output.layout;
 	pipeline.pipeline = output.pipeline;
 	
 	vkResources::scenePipelines->addPipeline("Ray", pipeline);
+
+	vkInit::RayTracingPipelineBuilder rayPBRBuilder(physicalDevice, device);
+	rayPBRBuilder.add_descriptor_set_layout(rayGenDescriptorSetLayout);
+	rayPBRBuilder.add_descriptor_set_layout(textureDescriptorSetLayout);
+	rayPBRBuilder.specify_ray_gen_shader("resources/shaders/rg.spv",4);
+	rayPBRBuilder.specify_miss_shader("resources/shaders/m.spv");
+	rayPBRBuilder.specify_miss_shader("resources/shaders/miss_shadow.spv");
+	rayPBRBuilder.specify_closest_hit_shader("resources/shaders/ch.spv");
+	//rayBuilder.specify_all_hit_shader("resources/shaders/anyhit_shadow.spv");
+	output = rayPBRBuilder.build(graphicsQueue, maincommandBuffer, raygenShaderBindingTablePBR, missShaderBindingTablePBR, hitShaderBindingTablePBR);
+	pipeline.pipelineLayout = output.layout;
+	pipeline.pipeline = output.pipeline;
+
+	vkResources::scenePipelines->addPipeline("RayPBR", pipeline);
 }
 
 void GraphicsEngine::finalize_setup() {
@@ -293,29 +309,116 @@ void GraphicsEngine::finalize_setup() {
 void GraphicsEngine::make_assets() {
 
 
-	std::unordered_map<vkAccelerationStructure::PrefabType, std::vector<const char*>> model_filenames = {
-		{vkAccelerationStructure::PrefabType::SPHERE, { "resources/models/box.obj", "resources/models/box.mtl" }},
-		//{vkAccelerationStructure::PrefabType::SPHERE, { "resources/models/sphere.obj", "resources/models/sphere.mtl" }},
-		//{vkAccelerationStructure::PrefabType::SPHERE, { "resources/models/sphere.obj", "resources/models/sphere.mtl" }},
-	};
+	vkInit::descriptorSetLayoutData bindings;
+	bindings.count = 1;
+	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+	vkInit::make_descriptor_pool(device,textureDescriptorPool ,static_cast<uint32_t>(2), bindings);
 
+	std::vector<std::string> texturesNames;
+	
+	texturesNames.push_back("resources/textures/white1.png");
+	texturesNames.push_back("resources/textures/black.png");
+	
+	// color normal arm dissplacement
+	texturesNames.push_back("resources/textures/groundDiff.png");
+	texturesNames.push_back("resources/textures/groundNormal.png");
+	texturesNames.push_back("resources/textures/groundARM.png");
+	texturesNames.push_back("resources/textures/groundDiss.png");
+
+	texturesNames.push_back("resources/textures/floorDiff.png");
+	texturesNames.push_back("resources/textures/floorNormal.png");
+	texturesNames.push_back("resources/textures/floorARM.png");
+	texturesNames.push_back("resources/textures/floorDiss.png");
+
+	texturesNames.push_back("resources/textures/metalDiff.png");
+	texturesNames.push_back("resources/textures/metalNormal.png");
+	texturesNames.push_back("resources/textures/metalARM.png");
+	texturesNames.push_back("resources/textures/metalDiss.png");
+
+	texturesNames.push_back("resources/textures/rockDiff.png");
+	texturesNames.push_back("resources/textures/rockNormal.png");
+	texturesNames.push_back("resources/textures/rockARM.png");
+	texturesNames.push_back("resources/textures/rockDiss.png");
+
+	texturesNames.push_back("resources/textures/stoneDiff.png");
+	texturesNames.push_back("resources/textures/stoneNormal.png");
+	texturesNames.push_back("resources/textures/stoneARM.png");
+	texturesNames.push_back("resources/textures/stoneDiss.png");
+
+	texturesNames.push_back("resources/textures/woodDiff.png");
+	texturesNames.push_back("resources/textures/woodNormal.png");
+	texturesNames.push_back("resources/textures/woodARM.png");
+	texturesNames.push_back("resources/textures/woodDiss.png");
+
+
+	vkImage::TextureInputChunk inputTexture;
+	inputTexture.logicalDevice = device;
+	inputTexture.physicalDevice = physicalDevice;
+	inputTexture.texturesNames = texturesNames;
+	inputTexture.filenames = nullptr;
+	inputTexture.queue = graphicsQueue;
+	inputTexture.commandBuffer = maincommandBuffer;
+	inputTexture.layout = textureDescriptorSetLayout;
+	inputTexture.descriptorPool = textureDescriptorPool;
+
+	textures = new vkImage::Texture(inputTexture);
 
 
 
 	accelerationStructure = new vkAccelerationStructure::VertexMenagerie();
-	
-	for (std::pair<vkAccelerationStructure::PrefabType, std::vector<const char*>> pair : model_filenames) {
-
-		vkMesh::ObjMesh model(pair.second[0], pair.second[1], glm::mat4(1.0f));
-		accelerationStructure->consume(pair.first, model.vertices, model.indices);
-	}
-
-	
 	vkAccelerationStructure::FinalizationChunk input;
 	input.logicalDevice = device;
 	input.physicalDevice = physicalDevice;
 	input.queue = graphicsQueue;
 	input.commandBuffer = maincommandBuffer;
+	
+	glm::mat4 glmMatrix(1); // Assume this is your populated glm::mat4 matrix
+
+	VkTransformMatrixKHR vkMatrix;
+	glmMatrix = translate(glmMatrix, glm::vec3(0,0,0));
+
+	
+	for(int i = 0; i < 3; i++)
+	{
+		for(int j = 0; j < 4; j++)
+		{
+			vkMatrix.matrix[i][j] = glmMatrix[j][i]; // Note the swapped indices due to column-major vs row-major discrepancy
+		}
+	}
+	//glm::vec4 in = glm::vec4(0,0,0,0);
+	glm::vec4 in = glm::vec4(18, 19, 20, 21);
+	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/c1.obj", "resources/models/sphere1.mtl",glm::mat4(1.0f)),vkMatrix,in);
+	in = glm::vec4(1, 0, 0, 0);
+	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/c2.obj", "resources/models/sphere1.mtl",glm::mat4(1.0f)),vkMatrix,in);
+	in = glm::vec4(2, 3, 4, 5);
+	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/Plane.obj", "resources/models/sphere1.mtl",glm::mat4(1.0f)),vkMatrix, in);
+	in = glm::vec4(6, 7, 8, 9);
+	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/Plane1.obj", "resources/models/sphere1.mtl",glm::mat4(1.0f)),vkMatrix, in);
+	in = glm::vec4(10, 11, 12, 13);
+	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/Plane2.obj", "resources/models/sphere1.mtl",glm::mat4(1.0f)),vkMatrix, in);
+	in = glm::vec4(14, 15,16, 17);
+	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/Plane3.obj", "resources/models/sphere1.mtl",glm::mat4(1.0f)),vkMatrix, in);
+	in = glm::vec4(18, 19, 20, 21);
+	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/Plane4.obj", "resources/models/sphere1.mtl",glm::mat4(1.0f)),vkMatrix, in);
+	in = glm::vec4(22, 23, 24, 25);
+	accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/Plane5.obj", "resources/models/sphere1.mtl",glm::mat4(1.0f)),vkMatrix, in);
+
+	
+	//accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/sphere1.obj", "resources/models/sphere1.mtl",glm::mat4(1.0f)),vkMatrix);
+
+
+	glmMatrix = translate(glmMatrix, glm::vec3(-2,0,0));
+	
+	for(int i = 0; i < 3; i++)
+	{
+		for(int j = 0; j < 4; j++)
+		{
+			vkMatrix.matrix[i][j] = glmMatrix[j][i]; // Note the swapped indices due to column-major vs row-major discrepancy
+		}
+	}
+	
+	//accelerationStructure->create_blas(input,vkMesh::ObjMesh("resources/models/sphere.obj", "resources/models/sphere.mtl",glm::mat4(1.0f)),vkMatrix);
+
 	accelerationStructure->finalize(input, CommandPool, bufferSize);
 }
 
@@ -351,13 +454,21 @@ void GraphicsEngine::create_frame_resources() {
 
 	vkInit::make_descriptor_pool(device, finalImageDescriptorPool,static_cast<uint32_t>(swapchainFrames.size()), bindings);
 
+	bindings.count = 3;
 	bindings.types[0] = VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
 	vkInit::make_descriptor_pool(device, rayCastDescriptorPool, static_cast<uint32_t>(swapchainFrames.size()), bindings);
 
-	bindings.count = 3;
+	bindings.count = 7;
 	bindings.types[0] = VkDescriptorType::VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
 	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER); //material
+	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER); //lights
+	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); //texcord an normals
+	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); //offsets
+
 	vkInit::make_descriptor_pool(device, rayGenDescriptorPool, static_cast<uint32_t>(swapchainFrames.size()), bindings);
 	for (vkUtil::SwapChainFrame& frame : swapchainFrames) //referencja 
 	{
@@ -365,7 +476,7 @@ void GraphicsEngine::create_frame_resources() {
 		vkInit::make_semaphore(device, frame.renderFinished,debugMode);
 		vkInit::make_semaphore(device, frame.computeFinished,debugMode);
 		vkInit::make_fence(device, frame.inFlight,debugMode);
-		frame.make_descriptors_resources();
+		frame.make_descriptors_resources(accelerationStructure);
 		vkInit::allocate_descriptor_set(device, frame.postProcessDescriptorSet,finalImageDescriptorPool, finalImageDescriptorSetLayout);
 		vkInit::allocate_descriptor_set(device, frame.RayCastDescriptorSet,rayCastDescriptorPool, rayCastDescriptorSetLayout);
 		vkInit::allocate_descriptor_set(device, frame.RayGenDescriptorSet,rayGenDescriptorPool, rayGenDescriptorSetLayout);
@@ -388,16 +499,17 @@ void GraphicsEngine::create_descriptor_set_layouts() {
 
 
 	vkInit::make_descriptor_set_layout(device, bindings, finalImageDescriptorSetLayout);
+	bindings.stages[0] = VkShaderStageFlagBits::VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+	vkInit::make_descriptor_set_layout(device, bindings, textureDescriptorSetLayout);
 	bindings.types[0] = VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 	bindings.stages[0] = (VkShaderStageFlagBits::VK_SHADER_STAGE_COMPUTE_BIT);
 	vkInit::make_descriptor_set_layout(device, bindings, rayCastDescriptorSetLayout);
 
 
-	bindings.count = 3;
-
-	bindings.types[0] = VkDescriptorType::VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
-	bindings.stages[0] = (VkShaderStageFlagBits::VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+	bindings.count = 7;
 	
+	bindings.types[0] = VkDescriptorType::VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+	bindings.stages[0] = (VkShaderStageFlagBits::VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
 
 	bindings.indices.push_back(1);
 	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
@@ -409,6 +521,26 @@ void GraphicsEngine::create_descriptor_set_layouts() {
 	bindings.counts.push_back(1);
 	bindings.stages.push_back(VkShaderStageFlagBits::VK_SHADER_STAGE_RAYGEN_BIT_KHR);
 
+	bindings.indices.push_back(3);
+	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+	bindings.counts.push_back(1);
+	bindings.stages.push_back(VkShaderStageFlagBits::VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
+
+	bindings.indices.push_back(4);
+	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+	bindings.counts.push_back(1);
+	bindings.stages.push_back(VkShaderStageFlagBits::VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
+
+	bindings.indices.push_back(5);
+	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+	bindings.counts.push_back(1);
+	bindings.stages.push_back(VkShaderStageFlagBits::VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
+	
+	bindings.indices.push_back(6);
+	bindings.types.push_back(VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+	bindings.counts.push_back(1);
+	bindings.stages.push_back(VkShaderStageFlagBits::VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
+	
 	vkInit::make_descriptor_set_layout(device, bindings, rayGenDescriptorSetLayout);
 	
 }
@@ -444,7 +576,11 @@ void GraphicsEngine::record_draw_command(VkCommandBuffer commandBuffer, uint32_t
 		VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, // lub inny odpowiedni etap
 		0, 0, NULL, 0, NULL, 1, &barrier
 	);
-	vkUtil::PipelineCacheChunk pipelineInfo = vkResources::scenePipelines->getPipeline("Ray");
+	vkUtil::PipelineCacheChunk pipelineInfo;
+	if(!PBR)
+	pipelineInfo = vkResources::scenePipelines->getPipeline("Ray");
+	else
+	pipelineInfo = vkResources::scenePipelines->getPipeline("RayPBR");
 
 	VkPhysicalDeviceRayTracingPipelinePropertiesKHR rtProps{};
 	rtProps.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR;
@@ -461,19 +597,30 @@ void GraphicsEngine::record_draw_command(VkCommandBuffer commandBuffer, uint32_t
 
 
 	VkStridedDeviceAddressRegionKHR raygenShaderSbtEntry{};
-	raygenShaderSbtEntry.deviceAddress = vkUtil::getBufferDeviceAddress(device, raygenShaderBindingTable.buffer);
+	//raygenShaderSbtEntry.deviceAddress = vkUtil::getBufferDeviceAddress(device, raygenShaderBindingTable.buffer);
 	raygenShaderSbtEntry.stride = handleSizeAligned;
 	raygenShaderSbtEntry.size = handleSizeAligned;
 
 	VkStridedDeviceAddressRegionKHR missShaderSbtEntry{};
-	missShaderSbtEntry.deviceAddress = vkUtil::getBufferDeviceAddress(device, missShaderBindingTable.buffer);
+	//missShaderSbtEntry.deviceAddress = vkUtil::getBufferDeviceAddress(device, missShaderBindingTable.buffer);
 	missShaderSbtEntry.stride = handleSizeAligned;
 	missShaderSbtEntry.size = handleSizeAligned;
 
 	VkStridedDeviceAddressRegionKHR hitShaderSbtEntry{};
-	hitShaderSbtEntry.deviceAddress = vkUtil::getBufferDeviceAddress(device, hitShaderBindingTable.buffer);
+	//hitShaderSbtEntry.deviceAddress = vkUtil::getBufferDeviceAddress(device, hitShaderBindingTable.buffer);
 	hitShaderSbtEntry.stride = handleSizeAligned;
 	hitShaderSbtEntry.size = handleSizeAligned;
+
+	if (PBR) {
+		hitShaderSbtEntry.deviceAddress = vkUtil::getBufferDeviceAddress(device, hitShaderBindingTablePBR.buffer);
+		missShaderSbtEntry.deviceAddress = vkUtil::getBufferDeviceAddress(device, missShaderBindingTablePBR.buffer);
+		raygenShaderSbtEntry.deviceAddress = vkUtil::getBufferDeviceAddress(device, raygenShaderBindingTablePBR.buffer);
+	}
+	else {
+		hitShaderSbtEntry.deviceAddress = vkUtil::getBufferDeviceAddress(device, hitShaderBindingTable.buffer);
+		missShaderSbtEntry.deviceAddress = vkUtil::getBufferDeviceAddress(device, missShaderBindingTable.buffer);
+		raygenShaderSbtEntry.deviceAddress = vkUtil::getBufferDeviceAddress(device, raygenShaderBindingTable.buffer);
+	}
 
 	VkStridedDeviceAddressRegionKHR callableShaderSbtEntry{};
 	
@@ -484,6 +631,7 @@ void GraphicsEngine::record_draw_command(VkCommandBuffer commandBuffer, uint32_t
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipelineInfo.pipeline);
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipelineInfo.pipelineLayout, 0, 1,
 		&swapchainFrames[imageIndex].RayGenDescriptorSet, 0, 0);
+	textures->useTexture(commandBuffer, pipelineInfo.pipelineLayout);
 	PFN_vkCmdTraceRaysKHR vkCmdTraceRaysKHR =
 		(PFN_vkCmdTraceRaysKHR)vkGetDeviceProcAddr(device, "vkCmdTraceRaysKHR");
 	vkCmdTraceRaysKHR(
@@ -570,7 +718,7 @@ void GraphicsEngine::record_draw_command(VkCommandBuffer commandBuffer, uint32_t
 		nullptr             // pDynamicOffsets
 	);
 
-	// Rysowanie: 6 wierzcho³ków, 1 instancja, start indeksu 0, start vertex 0
+
 	vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 
 	// Zakoñczenie renderowania dynamicznego
@@ -789,16 +937,41 @@ void GraphicsEngine::record_raytracing_command(VkCommandBuffer commandBuffer, ui
 void GraphicsEngine::prepare_frame(uint32_t imageIndex) {
 	vkUtil::SwapChainFrame& _frame = swapchainFrames[imageIndex];
 
-	glm::vec3 eye = { 0.0f, 0.0f, -10.0f };
-	glm::vec3 center = { 0.0f, 0.0f, 0.0f };
+	glm::vec3 eye = { -5.0f, 4.0f, 1.0f }; // sta³a pozycja kamery
+	float angle = glfwGetTime(); // obrót w czasie
+	float distance = .5f ; // odleg³oœæ na jak¹ patrzy kamera od swojego œrodka
+
+	glm::vec3 direction = {
+		cos(angle) * distance,
+		0.0f,
+		sin(angle) * distance
+	};
+
+	//glm::vec3 center = eye + direction;
+	glm::vec3 center = { 0.0f, 4.0f, 0.0f };
 	glm::vec3 up = { 0.0f, 1.0f, 0.0f };
+
 	glm::mat4 view = glm::lookAt(eye, center, up);
 
 	glm::mat4 projection = glm::perspective(glm::radians(45.0f), static_cast<float>(swapchainExtent.width) / static_cast<float>(swapchainExtent.height), 0.1f, 1024.0f);
-	//projection[1][1] *= -1;
+	projection[1][1] *= -1;
 
 	_frame.uboData.inverseProj = glm::inverse(projection);
 	_frame.uboData.inverseView = glm::inverse(view);
 	memcpy(_frame.uboDataWriteLocation, &(_frame.uboData), sizeof(vkUtil::UBO));
+
+	_frame.lightData.position = glm::vec4(-2,4.5f,-1,1);
+	_frame.lightData.intensity = glm::vec4(255);
+	memcpy(_frame.lightDataWriteLocation, &(_frame.lightData), sizeof(vkUtil::Light));
+	
+	_frame.materialData.color = glm::vec3(0.1);
+	_frame.materialData.shininess =  0.5f;
+	_frame.materialData.ambientCoefficient = 0.35f;
+	memcpy(_frame.materialDataWriteLocation, &(_frame.materialData), sizeof(vkUtil::Material));
+
+	
+	memcpy(_frame.normalsAndTextcordsDataWriteLocation, (accelerationStructure->inputArray.data()), accelerationStructure->totalExtraBLASBufferSize);
+	memcpy(_frame.offsetsDataWriteLocation, (accelerationStructure->extraBLASoffsets.data()),  sizeof(float) * accelerationStructure->extraBLASoffsets.size());
+	
 	_frame.write_descriptors(accelerationStructure->topLevelAS.handle, bufferSize);
 }
